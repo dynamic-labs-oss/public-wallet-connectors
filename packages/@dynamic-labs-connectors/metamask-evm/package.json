@@ -1,0 +1,29 @@
+{
+  "name": "@dynamic-labs-connectors/metamask-evm",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "private": false,
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "require": "./src/index.js",
+      "types": "./src/index.d.ts"
+    }
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@dynamic-labs/ethereum-core": "^4.31.2",
+    "@dynamic-labs/ethereum": "^4.31.2",
+    "@dynamic-labs/utils": "^4.31.2",
+    "@dynamic-labs/wallet-connector-core": "^4.31.2",
+    "viem": "^2.21.55"
+  },
+  "devDependencies": {
+    "@dynamic-labs/utils": "^4.31.2"
+  }
+}
