@@ -26,69 +26,129 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
    * @param props The options for the connector
    */
   constructor(props: EthereumWalletConnectorOpts) {
-    super({
-      ...props,
-      metadata: {
-        id: 'metamask',
-        name: 'MetaMask',
-        icon: 'https://iconic.dynamic-static-assets.com/icons/sprite.svg#metamask',
-      },
-    });
+    console.log('[MetaMaskEvmWalletConnector] constructor called with props:', Object.keys(props || {}));
+    try {
+      super({
+        ...props,
+        metadata: {
+          id: 'metamask',
+          name: 'MetaMask',
+          icon: 'https://iconic.dynamic-static-assets.com/icons/sprite.svg#metamask',
+        },
+      });
+      console.log('[MetaMaskEvmWalletConnector] super() completed successfully');
+    } catch (error) {
+      console.error('[MetaMaskEvmWalletConnector] constructor super() failed:', error);
+      console.error('[MetaMaskEvmWalletConnector] error type:', typeof error);
+      console.error('[MetaMaskEvmWalletConnector] error constructor:', error?.constructor?.name);
+      if (error instanceof Error) {
+        console.error('[MetaMaskEvmWalletConnector] error message:', error.message);
+        console.error('[MetaMaskEvmWalletConnector] error stack:', error.stack);
+      }
+      throw error;
+    }
 
     logger.debug('[MetaMaskEvmWalletConnector] constructed');
   }
 
   /**
    * Initializes the MetaMask SDK and emits providerReady event.
+   * With the factory pattern in connect-evm v13+, session recovery is awaited
+   * before createEVMClient returns, so state is immediately available.
    * @override Required override from the base connector class
    */
   override async init(): Promise<void> {
+    console.log('[MetaMaskEvmWalletConnector] ========== INIT CALLED ==========');
+    console.log('[MetaMaskEvmWalletConnector] init called at:', new Date().toISOString());
+    console.log('[MetaMaskEvmWalletConnector] MetaMaskSdkClient.isInitialized:', MetaMaskSdkClient.isInitialized);
+    console.log('[MetaMaskEvmWalletConnector] evmNetworks:', JSON.stringify(this.evmNetworks?.map(n => ({ chainId: n.chainId, name: n.name })), null, 2));
     logger.debug('[MetaMaskEvmWalletConnector] init called');
 
-    // Only initialize once
+    // Only initialize once (MetaMaskSdkClient handles concurrent calls)
     if (MetaMaskSdkClient.isInitialized) {
+      console.log('[MetaMaskEvmWalletConnector] SDK already initialized, checking session state...');
+      const accounts = MetaMaskSdkClient.getAccounts();
+      const status = MetaMaskSdkClient.getStatus();
+      console.log('[MetaMaskEvmWalletConnector] existing state - status:', status, 'accounts:', accounts);
+
+      // If already initialized and has session, emit events
+      if (accounts.length > 0) {
+        console.log('[MetaMaskEvmWalletConnector] already has session, emitting autoConnect');
+        this.walletConnectorEventsEmitter.emit('autoConnect', { connector: this });
+      }
       logger.debug('[MetaMaskEvmWalletConnector] SDK already initialized');
       return;
     }
 
-    await MetaMaskSdkClient.init({
-      evmNetworks: this.evmNetworks,
-      dappName: 'Dynamic',
-      callbacks: {
-        onAccountsChanged: (accounts) => {
-          if (accounts.length === 0) {
-            // User disconnected - trigger Dynamic's disconnect flow
-            logger.debug('[MetaMaskEvmWalletConnector] accounts empty, triggering disconnect');
-          }
+    try {
+      await MetaMaskSdkClient.init({
+        evmNetworks: this.evmNetworks,
+        dappName: 'Dynamic',
+        callbacks: {
+          // This fires after fresh connect (session recovery happens during init)
+          onConnect: (result) => {
+            console.log('[MetaMaskEvmWalletConnector] onConnect callback fired:', result);
+            // Emit autoConnect when SDK notifies us of a new connection
+            if (result.accounts?.length > 0 && result.chainId) {
+              console.log('[MetaMaskEvmWalletConnector] emitting autoConnect from onConnect callback');
+              this.walletConnectorEventsEmitter.emit('autoConnect', {
+                connector: this,
+              });
+            }
+          },
+          onAccountsChanged: (accounts) => {
+            console.log('[MetaMaskEvmWalletConnector] onAccountsChanged:', accounts);
+          },
+          onChainChanged: (chainId) => {
+            console.log('[MetaMaskEvmWalletConnector] onChainChanged:', chainId);
+          },
+          onDisconnect: () => {
+            console.log('[MetaMaskEvmWalletConnector] onDisconnect');
+          },
         },
-        onChainChanged: (chainId) => {
-          logger.debug('[MetaMaskEvmWalletConnector] chain changed:', chainId);
-        },
-        onDisconnect: () => {
-          logger.debug('[MetaMaskEvmWalletConnector] disconnected');
-        },
-      },
-    });
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[MetaMaskEvmWalletConnector] SDK init failed:', errorMessage);
+      console.error('[MetaMaskEvmWalletConnector] Full error:', error);
+      // Still emit providerReady so the connector shows up
+    }
 
-    logger.debug('[MetaMaskEvmWalletConnector] emitting providerReady');
+    // With factory pattern, session recovery is complete at this point
+    const status = MetaMaskSdkClient.getStatus();
+    const accounts = MetaMaskSdkClient.getAccounts();
+    const chainId = MetaMaskSdkClient.getSelectedChainId();
+    console.log('[MetaMaskEvmWalletConnector] SDK ready - status:', status, 'accounts:', accounts, 'chainId:', chainId);
 
-    // Emit providerReady so Dynamic knows the connector is available
+    // Emit providerReady so Dynamic can show this connector
     this.walletConnectorEventsEmitter.emit('providerReady', {
       connector: this,
-      shouldAutoConnect: false,
     });
+
+    // If session was recovered, emit autoConnect
+    if (accounts.length > 0 && chainId) {
+      console.log('[MetaMaskEvmWalletConnector] session recovered, emitting autoConnect');
+      this.walletConnectorEventsEmitter.emit('autoConnect', {
+        connector: this,
+      });
+    } else {
+      console.log('[MetaMaskEvmWalletConnector] no session to recover');
+    }
   }
 
   /**
-   * Find and return the MetaMask provider.
+   * Find and return the MetaMask provider from the SDK.
+   * The SDK uses EIP-6963 internally to find the correct MetaMask provider.
    * @override Returns the SDK's EIP-1193 provider wrapped for compatibility
    */
   override findProvider(): IEthereum | undefined {
     const sdkProvider = MetaMaskSdkClient.getProvider();
     if (!sdkProvider) {
-      logger.debug('[MetaMaskEvmWalletConnector] findProvider: no provider yet');
+      console.log('[MetaMaskEvmWalletConnector] findProvider: no provider available');
       return undefined;
     }
+
+    console.log('[MetaMaskEvmWalletConnector] findProvider: using SDK provider');
 
     // Wrap the SDK provider to fix EIP-1193 compatibility issues.
     // The SDK's eth_requestAccounts returns { accounts, chainId } instead of just accounts[].
@@ -119,31 +179,31 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   override async getAddress(): Promise<string | undefined> {
     logger.debug('[MetaMaskEvmWalletConnector] getAddress called');
 
-    // Check if already connected
+    // Check if already connected via SDK
     const existingAccount = MetaMaskSdkClient.getSelectedAccount();
     if (existingAccount) {
-      logger.debug('[MetaMaskEvmWalletConnector] returning existing account:', existingAccount);
+      logger.debug('[MetaMaskEvmWalletConnector] returning SDK account:', existingAccount);
       return existingAccount;
     }
 
-    // Trigger connection with all configured chain IDs
+    // Trigger SDK connection with all configured chain IDs
     const chainIds = this.evmNetworks.map((n) => toNumericChainId(n.chainId));
-    logger.debug('[MetaMaskEvmWalletConnector] connecting with chainIds:', chainIds);
+    logger.debug('[MetaMaskEvmWalletConnector] SDK connecting with chainIds:', chainIds);
 
     try {
       const { accounts } = await MetaMaskSdkClient.connect(chainIds);
       const address = accounts[0];
-      logger.debug('[MetaMaskEvmWalletConnector] connected, address:', address);
+      logger.debug('[MetaMaskEvmWalletConnector] SDK connected, address:', address);
       return address;
     } catch (error) {
-      logger.error('[MetaMaskEvmWalletConnector] connection failed:', error);
+      logger.error('[MetaMaskEvmWalletConnector] SDK connection failed:', error);
       throw error;
     }
   }
 
   /**
-   * Get connected accounts.
-   * @override Returns cached accounts from SDK
+   * Get connected accounts from the SDK.
+   * @override Returns accounts from SDK
    */
   override async getConnectedAccounts(): Promise<string[]> {
     const accounts = MetaMaskSdkClient.getAccounts();

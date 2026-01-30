@@ -8,5 +8,5 @@ export { MetaMaskSdkClient } from './MetaMaskSdkClient.js';
 export const MetaMaskEvmWalletConnectors = (
   _props: any,
 ): WalletConnectorConstructor[] => [
-  MetaMaskEvmWalletConnector as unknown as WalletConnectorConstructor,
-];
+    MetaMaskEvmWalletConnector as unknown as WalletConnectorConstructor,
+  ];

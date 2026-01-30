@@ -1,4 +1,7 @@
-import { createEVMClient, type MetamaskConnectEVM } from '@metamask/connect-evm';
+// Use dynamic import to avoid loading the SDK during SSR
+// The SDK's EIP-6963 detection runs immediately on module load,
+// which fails on the server where there's no window object.
+import type { MetamaskConnectEVM } from '@metamask/connect-evm';
 import { logger } from '@dynamic-labs/wallet-connector-core';
 
 import { buildSupportedNetworks, type CaipChainId, type EvmNetwork } from './utils.js';
@@ -32,6 +35,7 @@ export class MetaMaskSdkClient {
   private static instance: MetamaskConnectEVM | null = null;
   private static displayUri: string | undefined = undefined;
   private static connectUri: string | undefined = undefined;
+  private static initPromise: Promise<void> | null = null;
 
   static isInitialized = false;
 
@@ -41,14 +45,52 @@ export class MetaMaskSdkClient {
 
   /**
    * Initialize the MetaMask SDK.
+   * Uses a lock to prevent concurrent initialization.
    */
   static init = async (config: MetaMaskSdkClientConfig): Promise<void> => {
+    console.log('[MetaMaskSdkClient] ========== INIT CALLED ==========');
+    console.log('[MetaMaskSdkClient] init called at:', new Date().toISOString());
+    console.log('[MetaMaskSdkClient] isInitialized:', MetaMaskSdkClient.isInitialized);
+    console.log('[MetaMaskSdkClient] initPromise exists:', !!MetaMaskSdkClient.initPromise);
+
+    // If already initialized, return immediately
     if (MetaMaskSdkClient.isInitialized) {
+      console.log('[MetaMaskSdkClient] Already initialized, returning existing state');
+      console.log('[MetaMaskSdkClient] status:', MetaMaskSdkClient.getStatus());
+      console.log('[MetaMaskSdkClient] accounts:', MetaMaskSdkClient.getAccounts());
       logger.debug('[MetaMaskSdkClient] Already initialized, skipping');
       return;
     }
 
+    // If initialization is in progress, wait for it
+    if (MetaMaskSdkClient.initPromise) {
+      console.log('[MetaMaskSdkClient] Initialization in progress, waiting...');
+      logger.debug('[MetaMaskSdkClient] Initialization in progress, waiting...');
+      return MetaMaskSdkClient.initPromise;
+    }
+
+    // Start initialization with lock
+    console.log('[MetaMaskSdkClient] Starting new initialization...');
+    MetaMaskSdkClient.initPromise = MetaMaskSdkClient.doInit(config);
+
+    try {
+      await MetaMaskSdkClient.initPromise;
+    } finally {
+      MetaMaskSdkClient.initPromise = null;
+    }
+  };
+
+  /**
+   * Internal initialization logic.
+   */
+  private static doInit = async (config: MetaMaskSdkClientConfig): Promise<void> => {
     logger.debug('[MetaMaskSdkClient] init called', config);
+
+    // Guard against SSR - SDK requires browser environment
+    if (typeof window === 'undefined') {
+      logger.debug('[MetaMaskSdkClient] Skipping init - not in browser environment');
+      return;
+    }
 
     const supportedNetworks = buildSupportedNetworks(config.evmNetworks);
 
@@ -60,6 +102,9 @@ export class MetaMaskSdkClient {
     logger.debug('[MetaMaskSdkClient] supportedNetworks:', supportedNetworks);
 
     try {
+      // Dynamic import to avoid loading SDK during SSR
+      const { createEVMClient } = await import('@metamask/connect-evm');
+
       const sdk = await createEVMClient({
         dapp: {
           name: config.dappName ?? 'Dynamic',
@@ -75,6 +120,7 @@ export class MetaMaskSdkClient {
             config.callbacks?.onDisplayUri?.(uri);
           },
           connect: (result) => {
+            // With the factory pattern, the SDK fires this event after full initialization
             logger.debug('[MetaMaskSdkClient] connect event:', result);
             config.callbacks?.onConnect?.(result);
           },
@@ -98,9 +144,32 @@ export class MetaMaskSdkClient {
 
       MetaMaskSdkClient.instance = sdk;
       MetaMaskSdkClient.isInitialized = true;
-      logger.debug('[MetaMaskSdkClient] initialized successfully');
+
+      // In Next.js, the EIP-6963 detection may not be complete when createEVMClient returns.
+      // Poll until the SDK reaches a definitive state (not 'pending').
+      if (sdk.status === 'pending') {
+        const maxWaitMs = 3000;
+        const pollIntervalMs = 100;
+        const start = Date.now();
+        console.log('[MetaMaskSdkClient] SDK status is pending, polling for ready state...');
+
+        while (Date.now() - start < maxWaitMs) {
+          // 'connected' = session recovered, 'loaded' = no session, 'disconnected' = no session
+          if (sdk.status !== 'pending') {
+            console.log('[MetaMaskSdkClient] SDK ready after', Date.now() - start, 'ms, status:', sdk.status);
+            break;
+          }
+          await new Promise((r) => setTimeout(r, pollIntervalMs));
+        }
+      }
+
+      console.log('[MetaMaskSdkClient] SDK initialized - status:', sdk.status, 'accounts:', sdk.accounts, 'chainId:', sdk.selectedChainId);
+      logger.debug('[MetaMaskSdkClient] initialized successfully, status:', sdk.status);
     } catch (error) {
-      logger.error('[MetaMaskSdkClient] Failed to initialize:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[MetaMaskSdkClient] Failed to initialize:', errorMessage);
+      console.error('[MetaMaskSdkClient] Full error:', error);
+      logger.error('[MetaMaskSdkClient] Failed to initialize:', errorMessage);
       throw error;
     }
   };
@@ -208,6 +277,42 @@ export class MetaMaskSdkClient {
     logger.debug('[MetaMaskSdkClient] switchChain called:', { chainId, chainConfiguration });
 
     await sdk.switchChain({ chainId, chainConfiguration });
+  };
+
+  /**
+   * Check if session was recovered after SDK initialization.
+   * The 2-second delay in doInit() should have allowed session recovery to complete.
+   * 
+   * @returns true if a session was recovered (status is 'connected' and has accounts)
+   */
+  static waitForSessionRecovery = async (): Promise<boolean> => {
+    if (!MetaMaskSdkClient.instance) {
+      logger.debug('[MetaMaskSdkClient] waitForSessionRecovery: not initialized');
+      return false;
+    }
+
+    const status = MetaMaskSdkClient.instance.status;
+    const accounts = MetaMaskSdkClient.instance.accounts;
+    const chainId = MetaMaskSdkClient.instance.selectedChainId;
+
+    console.log('[MetaMaskSdkClient] waitForSessionRecovery check:', { status, accounts, chainId });
+
+    // Session is recovered if status is 'connected' and we have accounts
+    if (status === 'connected' && accounts.length > 0) {
+      console.log('[MetaMaskSdkClient] session recovered!');
+      return true;
+    }
+
+    console.log('[MetaMaskSdkClient] no session recovered');
+    return false;
+  };
+
+  /**
+   * Check if there's an existing session (accounts available).
+   */
+  static hasSession = (): boolean => {
+    if (!MetaMaskSdkClient.instance) return false;
+    return MetaMaskSdkClient.instance.accounts.length > 0;
   };
 
   /**

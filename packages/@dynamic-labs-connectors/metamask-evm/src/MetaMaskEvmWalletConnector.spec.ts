@@ -48,6 +48,8 @@ describe('MetaMaskEvmWalletConnector', () => {
       chainId: 1,
     });
     (MetaMaskSdkClient.disconnect as jest.Mock).mockResolvedValue(undefined);
+    (MetaMaskSdkClient.waitForSessionRecovery as jest.Mock).mockResolvedValue(false);
+    (MetaMaskSdkClient.hasSession as jest.Mock).mockReturnValue(false);
   });
 
   describe('constructor', () => {
@@ -83,13 +85,45 @@ describe('MetaMaskEvmWalletConnector', () => {
       );
     });
 
-    it('should emit providerReady event', async () => {
+    it('should emit providerReady event when no session', async () => {
+      (MetaMaskSdkClient.waitForSessionRecovery as jest.Mock).mockResolvedValue(false);
+
       await connector.init();
 
       expect(emitSpy).toHaveBeenCalledWith('providerReady', {
         connector,
-        shouldAutoConnect: false,
       });
+      // Should NOT emit autoConnect when no session
+      expect(emitSpy).not.toHaveBeenCalledWith('autoConnect', expect.anything());
+    });
+
+    it('should emit providerReady and autoConnect events when session exists with chainId', async () => {
+      Object.defineProperty(connector, 'evmNetworks', { value: mockEvmNetworks });
+      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue(['0x123']);
+      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue('0x1');
+
+      await connector.init();
+
+      expect(emitSpy).toHaveBeenCalledWith('providerReady', {
+        connector,
+      });
+      expect(emitSpy).toHaveBeenCalledWith('autoConnect', {
+        connector,
+      });
+    });
+
+    it('should NOT emit autoConnect when session exists but chainId is missing', async () => {
+      Object.defineProperty(connector, 'evmNetworks', { value: mockEvmNetworks });
+      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue(['0x123']);
+      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue(undefined);
+
+      await connector.init();
+
+      expect(emitSpy).toHaveBeenCalledWith('providerReady', {
+        connector,
+      });
+      // Should NOT emit autoConnect without chainId
+      expect(emitSpy).not.toHaveBeenCalledWith('autoConnect', expect.anything());
     });
 
     it('should not re-initialize if already initialized', async () => {
@@ -262,4 +296,5 @@ describe('MetaMaskEvmWalletConnector', () => {
       expect(connector.getConnectionUri()).toBeUndefined();
     });
   });
+
 });

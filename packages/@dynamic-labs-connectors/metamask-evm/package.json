@@ -19,13 +19,8 @@
     "@metamask/connect-evm": "^0.4.1"
   },
   "peerDependencies": {
-    "@dynamic-labs/ethereum-core": "^4.31.2",
-    "@dynamic-labs/ethereum": "^4.31.2",
-    "@dynamic-labs/utils": "^4.31.2",
-    "@dynamic-labs/wallet-connector-core": "^4.31.2",
-    "viem": "^2.21.55"
-  },
-  "devDependencies": {
-    "@dynamic-labs/utils": "^4.31.2"
+    "@dynamic-labs/ethereum-core": ">=4.31.2",
+    "@dynamic-labs/ethereum": ">=4.31.2",
+    "@dynamic-labs/wallet-connector-core": ">=4.31.2"
   }
 }

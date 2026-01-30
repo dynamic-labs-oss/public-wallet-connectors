@@ -263,8 +263,8 @@ importers:
         specifier: ^4.31.2
         version: 4.37.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@metamask/connect-evm':
-        specifier: ^0.4.1
-        version: 0.4.1(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: file:../../../tmp/connect-monorepo/packages/connect-evm
+        version: file:tmp/connect-monorepo/packages/connect-evm(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       viem:
         specifier: ^2.21.55
         version: 2.37.5(bufferutil@4.0.9)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.22.4)
@@ -1957,8 +1957,8 @@ packages:
     resolution: {integrity: sha512-807Y6JxqeY3tckSRDse96RmHV6atDsSPLD/x9KIync8ccFjOwSZlv0n4NA5Bsi0znjOogU0jEe5hPNIDTFzFRg==}
     engines: {node: ^18.18 || >=20}
 
-  '@metamask/connect-evm@0.4.1':
-    resolution: {integrity: sha512-x2jirwkoClm4q4xW30Gv+vb4dvA0o2yQuLGVldItoKQRkw4adR+Lio4gxv6KAzOeNHTKORiJmq1+AtvqgWyfcQ==}
+  '@metamask/connect-evm@file:tmp/connect-monorepo/packages/connect-evm':
+    resolution: {directory: tmp/connect-monorepo/packages/connect-evm, type: directory}
     engines: {node: '>=20.19.0'}
 
   '@metamask/connect-multichain@0.5.1':
@@ -10551,7 +10551,7 @@ snapshots:
       - '@babel/runtime'
       - supports-color
 
-  '@metamask/connect-evm@0.4.1(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+  '@metamask/connect-evm@file:tmp/connect-monorepo/packages/connect-evm(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       '@metamask/analytics': 0.2.0
       '@metamask/chain-agnostic-permission': 1.4.0(@babel/runtime@7.28.4)
@@ -12722,7 +12722,7 @@ snapshots:
 
   '@types/bn.js@5.2.0':
     dependencies:
-      '@types/node': 20.19.30
+      '@types/node': 18.16.9
 
   '@types/cacheable-request@6.0.3':
     dependencies:
@@ -17748,7 +17748,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 20.19.30
+      '@types/node': 18.16.9
       long: 5.3.2
 
   proxy-compare@2.6.0: {}

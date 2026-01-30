@@ -13,6 +13,16 @@ jest.mock('@dynamic-labs/wallet-connector-core', () => ({
   },
 }));
 
+// Mock window for SSR guard - tests need browser environment
+const originalWindow = global.window;
+beforeAll(() => {
+  // @ts-expect-error - mocking window for tests
+  global.window = { location: { origin: 'https://test.com' } };
+});
+afterAll(() => {
+  global.window = originalWindow;
+});
+
 const mockSdk = {
   getProvider: jest.fn(),
   status: 'connected',
@@ -113,7 +123,7 @@ describe('MetaMaskSdkClient', () => {
       expect(onDisplayUri).toHaveBeenCalledWith('wc:test-uri');
     });
 
-    it('should invoke onConnect callback', async () => {
+    it('should invoke onConnect callback (deferred)', async () => {
       const onConnect = jest.fn();
       const configWithCallbacks: MetaMaskSdkClientConfig = {
         ...mockConfig,
@@ -129,6 +139,9 @@ describe('MetaMaskSdkClient', () => {
       await MetaMaskSdkClient.init(configWithCallbacks);
 
       capturedEventHandlers.connect({ chainId: '0x1', accounts: ['0x123'] });
+
+      // The callback is deferred with setTimeout(0) to let SDK finish updating state
+      await new Promise((r) => setTimeout(r, 0));
       expect(onConnect).toHaveBeenCalledWith({ chainId: '0x1', accounts: ['0x123'] });
     });
 
@@ -355,6 +368,65 @@ describe('MetaMaskSdkClient', () => {
       expect(MetaMaskSdkClient.isInitialized).toBe(false);
       expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
       expect(MetaMaskSdkClient.getConnectUri()).toBeUndefined();
+    });
+  });
+
+  describe('waitForSessionRecovery', () => {
+    it('should return false if not initialized', async () => {
+      const result = await MetaMaskSdkClient.waitForSessionRecovery();
+      expect(result).toBe(false);
+    });
+
+    it('should return true if accounts exist immediately', async () => {
+      await MetaMaskSdkClient.init(mockConfig);
+      // mockSdk already has accounts set
+
+      const result = await MetaMaskSdkClient.waitForSessionRecovery(1000, 50);
+      expect(result).toBe(true);
+    });
+
+    it('should return false if status is loaded with no accounts', async () => {
+      mockSdk.accounts = [];
+      mockSdk.status = 'loaded'; // 'loaded' means SDK loaded but no session
+      await MetaMaskSdkClient.init(mockConfig);
+
+      const result = await MetaMaskSdkClient.waitForSessionRecovery(500, 50);
+      expect(result).toBe(false);
+    });
+
+    it('should return true when session was recovered during SDK init (factory pattern)', async () => {
+      // With the factory pattern, session recovery happens inside createEVMClient
+      // so by the time init() returns, state is already populated
+      mockSdk.accounts = ['0x123'];
+      mockSdk.status = 'connected';
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      // After init completes, waitForSessionRecovery should return true
+      const result = await MetaMaskSdkClient.waitForSessionRecovery();
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('hasSession', () => {
+    it('should return false if not initialized', () => {
+      expect(MetaMaskSdkClient.hasSession()).toBe(false);
+    });
+
+    it('should return false if no accounts', async () => {
+      mockSdk.accounts = [];
+      mockSdk.status = 'loaded'; // Exit polling loop immediately
+      await MetaMaskSdkClient.init(mockConfig);
+
+      expect(MetaMaskSdkClient.hasSession()).toBe(false);
+    });
+
+    it('should return true if accounts exist', async () => {
+      mockSdk.accounts = ['0x123'];
+      mockSdk.status = 'connected'; // Session recovered
+      await MetaMaskSdkClient.init(mockConfig);
+
+      expect(MetaMaskSdkClient.hasSession()).toBe(true);
     });
   });
 });

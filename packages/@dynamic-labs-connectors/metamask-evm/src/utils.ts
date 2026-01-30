@@ -65,8 +65,24 @@ export function extractRpcUrl(network: EvmNetwork): string | undefined {
 }
 
 /**
+ * Fallback RPC URLs for common networks when Dynamic doesn't provide them.
+ * These are public endpoints - production apps should use their own RPC providers.
+ */
+const FALLBACK_RPC_URLS: Record<number, string> = {
+  1: 'https://eth.llamarpc.com',           // Ethereum Mainnet
+  11155111: 'https://rpc.sepolia.org',     // Sepolia
+  137: 'https://polygon-rpc.com',          // Polygon
+  42161: 'https://arb1.arbitrum.io/rpc',   // Arbitrum
+  10: 'https://mainnet.optimism.io',       // Optimism
+  8453: 'https://mainnet.base.org',        // Base
+  56: 'https://bsc-dataseed.binance.org',  // BNB Chain
+  43114: 'https://api.avax.network/ext/bc/C/rpc', // Avalanche
+};
+
+/**
  * Build supportedNetworks map for MetaMask SDK from Dynamic's evmNetworks.
  * Maps CAIP-2 chain IDs to RPC URLs.
+ * Falls back to public RPC URLs if Dynamic doesn't provide them.
  * @example { "eip155:1": "https://mainnet.infura.io/..." }
  */
 export function buildSupportedNetworks(
@@ -74,14 +90,25 @@ export function buildSupportedNetworks(
 ): Record<CaipChainId, string> {
   const result: Record<CaipChainId, string> = {};
 
+  console.log('[buildSupportedNetworks] input evmNetworks:', JSON.stringify(evmNetworks, null, 2));
+
   for (const network of evmNetworks) {
     const chainId = toNumericChainId(network.chainId);
-    const rpcUrl = extractRpcUrl(network);
+    let rpcUrl = extractRpcUrl(network);
+
+    // Use fallback if no RPC URL provided
+    if (!rpcUrl && FALLBACK_RPC_URLS[chainId]) {
+      console.log(`[buildSupportedNetworks] Using fallback RPC for chain ${chainId}`);
+      rpcUrl = FALLBACK_RPC_URLS[chainId];
+    }
 
     if (rpcUrl) {
       result[toCAIP2(chainId)] = rpcUrl;
+    } else {
+      console.warn(`[buildSupportedNetworks] No RPC URL for chain ${chainId}, skipping`);
     }
   }
 
+  console.log('[buildSupportedNetworks] result:', JSON.stringify(result, null, 2));
   return result;
 }
