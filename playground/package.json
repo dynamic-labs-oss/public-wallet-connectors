@@ -1,0 +1,34 @@
+{
+  "name": "playground",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "sync": "cd ../tmp/sdk-tools && ./sync-all.sh"
+  },
+  "dependencies": {
+    "@dynamic-labs/ethereum": "^4.56.0",
+    "@dynamic-labs/ethereum-core": "^4.56.0",
+    "@dynamic-labs/sdk-react-core": "^4.56.0",
+    "@dynamic-labs/wallet-connector-core": "^4.56.0",
+    "@metamask/connect-evm": "^0.4.1",
+    "@metamask/rpc-errors": "^7.0.3",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "viem": "^2.21.55"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
