@@ -1,4 +1,7 @@
-import { MetaMaskEvmWalletConnectors, MetaMaskEvmWalletConnector } from './index.js';
+import {
+  MetaMaskEvmWalletConnectors,
+  MetaMaskEvmWalletConnector,
+} from './index.js';
 
 // Mock the connect-evm module before it's imported
 jest.mock('@metamask/connect-evm', () => ({

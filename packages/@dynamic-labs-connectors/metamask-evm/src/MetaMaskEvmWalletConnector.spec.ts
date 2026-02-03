@@ -62,23 +62,41 @@ describe('MetaMaskEvmWalletConnector', () => {
     (MetaMaskSdkClient.isInitialized as any) = false;
     (MetaMaskSdkClient.init as jest.Mock).mockResolvedValue(undefined);
     (MetaMaskSdkClient.getStatus as jest.Mock).mockReturnValue('loaded');
-    (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(undefined);
+    (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(
+      undefined,
+    );
     (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue([]);
     (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(undefined);
     (MetaMaskSdkClient.getDisplayUri as jest.Mock).mockReturnValue(undefined);
-    (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue(undefined);
-    (MetaMaskSdkClient.hasEmittedAutoConnect as jest.Mock).mockReturnValue(false);
-    (MetaMaskSdkClient.markAutoConnectEmitted as jest.Mock).mockImplementation(() => undefined);
+    (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue(
+      undefined,
+    );
+    (MetaMaskSdkClient.hasEmittedAutoConnect as jest.Mock).mockReturnValue(
+      false,
+    );
+    (MetaMaskSdkClient.markAutoConnectEmitted as jest.Mock).mockImplementation(
+      () => undefined,
+    );
     (MetaMaskSdkClient.connect as jest.Mock).mockResolvedValue({
       accounts: ['0x1234567890abcdef1234567890abcdef12345678'],
       chainId: 1,
     });
     (MetaMaskSdkClient.disconnect as jest.Mock).mockResolvedValue(undefined);
-    (MetaMaskSdkClient.setCachedAccounts as jest.Mock).mockImplementation(() => undefined);
-    (MetaMaskSdkClient.setCachedSelectedChainId as jest.Mock).mockImplementation(() => undefined);
-    (MetaMaskSdkClient.setOnDisplayUriCallback as jest.Mock).mockImplementation(() => undefined);
-    (MetaMaskSdkClient.clearOnDisplayUriCallback as jest.Mock).mockImplementation(() => undefined);
-    (MetaMaskSdkClient.withRequestAccountsLock as jest.Mock).mockImplementation(async (fn: any) => fn());
+    (MetaMaskSdkClient.setCachedAccounts as jest.Mock).mockImplementation(
+      () => undefined,
+    );
+    (
+      MetaMaskSdkClient.setCachedSelectedChainId as jest.Mock
+    ).mockImplementation(() => undefined);
+    (MetaMaskSdkClient.setOnDisplayUriCallback as jest.Mock).mockImplementation(
+      () => undefined,
+    );
+    (
+      MetaMaskSdkClient.clearOnDisplayUriCallback as jest.Mock
+    ).mockImplementation(() => undefined);
+    (MetaMaskSdkClient.withRequestAccountsLock as jest.Mock).mockImplementation(
+      async (fn: any) => fn(),
+    );
   });
 
   describe('constructor', () => {
@@ -102,7 +120,10 @@ describe('MetaMaskEvmWalletConnector', () => {
 
   describe('init', () => {
     beforeEach(() => {
-      Object.defineProperty(connector, 'evmNetworks', { value: mockEvmNetworks, writable: true });
+      Object.defineProperty(connector, 'evmNetworks', {
+        value: mockEvmNetworks,
+        writable: true,
+      });
     });
 
     it('should call MetaMaskSdkClient.init with evmNetworks', async () => {
@@ -126,7 +147,9 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should emit autoConnect when session exists with accounts and chainId', async () => {
       (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue(['0x123']);
-      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue('0x1');
+      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue(
+        '0x1',
+      );
 
       await connector.init();
 
@@ -137,33 +160,50 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should NOT emit autoConnect when accounts missing', async () => {
       (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue([]);
-      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue('0x1');
+      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue(
+        '0x1',
+      );
 
       await connector.init();
 
       expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
-      expect(emitSpy).not.toHaveBeenCalledWith('autoConnect', expect.anything());
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'autoConnect',
+        expect.anything(),
+      );
     });
 
     it('should NOT emit autoConnect when chainId missing', async () => {
       (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue(['0x123']);
-      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue(undefined);
+      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue(
+        undefined,
+      );
 
       await connector.init();
 
       expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
-      expect(emitSpy).not.toHaveBeenCalledWith('autoConnect', expect.anything());
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'autoConnect',
+        expect.anything(),
+      );
     });
 
     it('should NOT emit autoConnect if already emitted', async () => {
       (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue(['0x123']);
-      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue('0x1');
-      (MetaMaskSdkClient.hasEmittedAutoConnect as jest.Mock).mockReturnValue(true);
+      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue(
+        '0x1',
+      );
+      (MetaMaskSdkClient.hasEmittedAutoConnect as jest.Mock).mockReturnValue(
+        true,
+      );
 
       await connector.init();
 
       expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
-      expect(emitSpy).not.toHaveBeenCalledWith('autoConnect', expect.anything());
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'autoConnect',
+        expect.anything(),
+      );
     });
 
     it('should skip init if already initialized', async () => {
@@ -179,7 +219,9 @@ describe('MetaMaskEvmWalletConnector', () => {
     it('should emit autoConnect on re-init if already initialized with session', async () => {
       (MetaMaskSdkClient.isInitialized as any) = true;
       (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue(['0x123']);
-      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue('0x1');
+      (MetaMaskSdkClient.getSelectedChainId as jest.Mock).mockReturnValue(
+        '0x1',
+      );
 
       await connector.init();
 
@@ -201,7 +243,9 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
 
       const provider = connector.findProvider();
       expect(provider).toBeDefined();
@@ -214,8 +258,13 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
-      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue(['0x123', '0x456']);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue([
+        '0x123',
+        '0x456',
+      ]);
 
       const provider = connector.findProvider();
       const result = await provider?.request({ method: 'eth_accounts' });
@@ -230,8 +279,13 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
-      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue(['0x123', '0x456']);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue([
+        '0x123',
+        '0x456',
+      ]);
 
       const provider = connector.findProvider();
       const result = await provider?.request({ method: 'eth_requestAccounts' });
@@ -249,15 +303,24 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
-      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValueOnce([]).mockReturnValueOnce([]);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+      (MetaMaskSdkClient.getAccounts as jest.Mock)
+        .mockReturnValueOnce([])
+        .mockReturnValueOnce([]);
 
       const provider = connector.findProvider();
       const result = await provider?.request({ method: 'eth_requestAccounts' });
 
       expect(result).toEqual(['0x123', '0x456']);
-      expect(MetaMaskSdkClient.setCachedAccounts).toHaveBeenCalledWith(['0x123', '0x456']);
-      expect(MetaMaskSdkClient.setCachedSelectedChainId).toHaveBeenCalledWith('0x1');
+      expect(MetaMaskSdkClient.setCachedAccounts).toHaveBeenCalledWith([
+        '0x123',
+        '0x456',
+      ]);
+      expect(MetaMaskSdkClient.setCachedSelectedChainId).toHaveBeenCalledWith(
+        '0x1',
+      );
     });
 
     it('should handle eth_requestAccounts when response is already an array', async () => {
@@ -266,14 +329,21 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
-      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValueOnce([]).mockReturnValueOnce([]);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+      (MetaMaskSdkClient.getAccounts as jest.Mock)
+        .mockReturnValueOnce([])
+        .mockReturnValueOnce([]);
 
       const provider = connector.findProvider();
       const result = await provider?.request({ method: 'eth_requestAccounts' });
 
       expect(result).toEqual(['0x123', '0x456']);
-      expect(MetaMaskSdkClient.setCachedAccounts).toHaveBeenCalledWith(['0x123', '0x456']);
+      expect(MetaMaskSdkClient.setCachedAccounts).toHaveBeenCalledWith([
+        '0x123',
+        '0x456',
+      ]);
     });
 
     it('should use lock for eth_requestAccounts', async () => {
@@ -282,7 +352,9 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
       (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue([]);
 
       const provider = connector.findProvider();
@@ -297,23 +369,32 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
 
       const provider = connector.findProvider();
       const result = await provider?.request({ method: 'eth_chainId' });
 
       expect(result).toBe('0x1');
-      expect(mockProvider.request).toHaveBeenCalledWith({ method: 'eth_chainId' });
+      expect(mockProvider.request).toHaveBeenCalledWith({
+        method: 'eth_chainId',
+      });
     });
   });
 
   describe('getAddress', () => {
     beforeEach(() => {
-      Object.defineProperty(connector, 'evmNetworks', { value: mockEvmNetworks, writable: true });
+      Object.defineProperty(connector, 'evmNetworks', {
+        value: mockEvmNetworks,
+        writable: true,
+      });
     });
 
     it('should return existing account if connected', async () => {
-      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue('0xexisting');
+      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(
+        '0xexisting',
+      );
 
       const address = await connector.getAddress();
 
@@ -323,7 +404,9 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should initialize SDK if not initialized', async () => {
       (MetaMaskSdkClient.isInitialized as any) = false;
-      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(undefined);
+      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(
+        undefined,
+      );
 
       const mockProvider = {
         request: jest.fn(async ({ method }: { method: string }) => {
@@ -333,7 +416,9 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
 
       await connector.getAddress();
 
@@ -342,7 +427,9 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should return account from eth_accounts if available', async () => {
       (MetaMaskSdkClient.isInitialized as any) = true;
-      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(undefined);
+      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(
+        undefined,
+      );
 
       const mockProvider = {
         request: jest.fn(async ({ method }: { method: string }) => {
@@ -353,7 +440,9 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
 
       const address = await connector.getAddress();
 
@@ -363,7 +452,9 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should call SDK connect if no accounts from eth_accounts', async () => {
       (MetaMaskSdkClient.isInitialized as any) = true;
-      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(undefined);
+      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(
+        undefined,
+      );
 
       const mockProvider = {
         request: jest.fn(async ({ method }: { method: string }) => {
@@ -373,7 +464,9 @@ describe('MetaMaskEvmWalletConnector', () => {
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
       (MetaMaskSdkClient.connect as jest.Mock).mockResolvedValue({
         accounts: ['0xfromConnect'],
         chainId: 1,
@@ -387,47 +480,63 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should register onDisplayUri callback', async () => {
       (MetaMaskSdkClient.isInitialized as any) = true;
-      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(undefined);
+      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(
+        undefined,
+      );
 
       const mockProvider = {
         request: jest.fn(async () => []),
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
 
       const onDisplayUri = jest.fn();
       await connector.getAddress({ onDisplayUri } as any);
 
-      expect(MetaMaskSdkClient.setOnDisplayUriCallback).toHaveBeenCalledWith(onDisplayUri);
+      expect(MetaMaskSdkClient.setOnDisplayUriCallback).toHaveBeenCalledWith(
+        onDisplayUri,
+      );
       expect(MetaMaskSdkClient.clearOnDisplayUriCallback).toHaveBeenCalled();
     });
 
     it('should throw on connection error', async () => {
       (MetaMaskSdkClient.isInitialized as any) = true;
-      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(undefined);
+      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(
+        undefined,
+      );
 
       const mockProvider = {
         request: jest.fn(async () => []),
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
-      (MetaMaskSdkClient.connect as jest.Mock).mockRejectedValue(new Error('User rejected'));
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+      (MetaMaskSdkClient.connect as jest.Mock).mockRejectedValue(
+        new Error('User rejected'),
+      );
 
       await expect(connector.getAddress()).rejects.toThrow('User rejected');
     });
 
     it('should deduplicate concurrent getAddress calls', async () => {
       (MetaMaskSdkClient.isInitialized as any) = true;
-      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(undefined);
+      (MetaMaskSdkClient.getSelectedAccount as jest.Mock).mockReturnValue(
+        undefined,
+      );
 
       const mockProvider = {
         request: jest.fn(async () => []),
         on: jest.fn(),
         removeListener: jest.fn(),
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
       (MetaMaskSdkClient.connect as jest.Mock).mockResolvedValue({
         accounts: ['0x123'],
         chainId: 1,
@@ -445,7 +554,10 @@ describe('MetaMaskEvmWalletConnector', () => {
 
   describe('getConnectedAccounts', () => {
     it('should return accounts from SDK', async () => {
-      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue(['0x123', '0x456']);
+      (MetaMaskSdkClient.getAccounts as jest.Mock).mockReturnValue([
+        '0x123',
+        '0x456',
+      ]);
 
       const accounts = await connector.getConnectedAccounts();
 
@@ -473,7 +585,7 @@ describe('MetaMaskEvmWalletConnector', () => {
     it('should return chain IDs as decimal strings', async () => {
       Object.defineProperty(connector, 'evmNetworks', {
         value: [{ chainId: 1 }, { chainId: 137 }, { chainId: '0x89' }],
-        writable: true
+        writable: true,
       });
 
       const networks = await connector.getSupportedNetworks();

@@ -61,7 +61,9 @@ describe('utils', () => {
     it('should handle viem format (object with http array)', () => {
       const network: EvmNetwork = {
         chainId: 1,
-        rpcUrls: { default: { http: ['https://first.rpc', 'https://second.rpc'] } },
+        rpcUrls: {
+          default: { http: ['https://first.rpc', 'https://second.rpc'] },
+        },
       };
       expect(extractRpcUrl(network)).toBe('https://first.rpc');
     });
@@ -93,7 +95,7 @@ describe('utils', () => {
         { chainId: 1, rpcUrls: ['https://eth.rpc'] },
       ];
       expect(buildSupportedNetworks(networks)).toEqual({
-        'eip155:1': 'https://eth.rpc',
+        '0x1': 'https://eth.rpc',
       });
     });
 
@@ -103,8 +105,8 @@ describe('utils', () => {
         { chainId: 137, rpcUrls: ['https://polygon.rpc'] },
       ];
       expect(buildSupportedNetworks(networks)).toEqual({
-        'eip155:1': 'https://eth.rpc',
-        'eip155:137': 'https://polygon.rpc',
+        '0x1': 'https://eth.rpc',
+        '0x89': 'https://polygon.rpc',
       });
     });
 
@@ -115,8 +117,8 @@ describe('utils', () => {
         { chainId: 42161, rpcUrls: ['https://arb.rpc'] },
       ];
       expect(buildSupportedNetworks(networks)).toEqual({
-        'eip155:1': 'https://eth.rpc',
-        'eip155:42161': 'https://arb.rpc',
+        '0x1': 'https://eth.rpc',
+        '0xa4b1': 'https://arb.rpc',
       });
     });
 
@@ -125,7 +127,7 @@ describe('utils', () => {
         { chainId: '0x89', rpcUrls: ['https://polygon.rpc'] },
       ];
       expect(buildSupportedNetworks(networks)).toEqual({
-        'eip155:137': 'https://polygon.rpc',
+        '0x89': 'https://polygon.rpc',
       });
     });
 
@@ -135,7 +137,7 @@ describe('utils', () => {
         { chainId: 137, rpcUrls: [] }, // empty array
       ];
       expect(buildSupportedNetworks(networks)).toEqual({
-        'eip155:1': 'https://eth.rpc',
+        '0x1': 'https://eth.rpc',
       });
     });
   });

@@ -8,5 +8,5 @@ export const MetaMaskEvmWalletConnectors = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _props: unknown,
 ): WalletConnectorConstructor[] => [
-    MetaMaskEvmWalletConnector as unknown as WalletConnectorConstructor,
-  ];
+  MetaMaskEvmWalletConnector as unknown as WalletConnectorConstructor,
+];

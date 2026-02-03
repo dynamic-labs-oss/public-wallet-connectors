@@ -1,4 +1,7 @@
-import { MetaMaskSdkClient, type MetaMaskSdkClientConfig } from './MetaMaskSdkClient.js';
+import {
+  MetaMaskSdkClient,
+  type MetaMaskSdkClientConfig,
+} from './MetaMaskSdkClient.js';
 
 const mockCreateEVMClient = jest.fn();
 
@@ -63,7 +66,9 @@ describe('MetaMaskSdkClient', () => {
   describe('constructor', () => {
     it('should not be instantiable', () => {
       // @ts-expect-error testing private constructor
-      expect(() => new MetaMaskSdkClient()).toThrow('MetaMaskSdkClient is not instantiable');
+      expect(() => new MetaMaskSdkClient()).toThrow(
+        'MetaMaskSdkClient is not instantiable',
+      );
     });
   });
 
@@ -93,8 +98,8 @@ describe('MetaMaskSdkClient', () => {
           },
           api: {
             supportedNetworks: {
-              'eip155:1': 'https://eth.rpc',
-              'eip155:137': 'https://polygon.rpc',
+              '0x1': 'https://eth.rpc',
+              '0x89': 'https://polygon.rpc',
             },
           },
           ui: {
@@ -160,7 +165,10 @@ describe('MetaMaskSdkClient', () => {
 
       // Test connect event
       capturedEventHandlers.connect({ chainId: '0x1', accounts: ['0x123'] });
-      expect(onConnect).toHaveBeenCalledWith({ chainId: '0x1', accounts: ['0x123'] });
+      expect(onConnect).toHaveBeenCalledWith({
+        chainId: '0x1',
+        accounts: ['0x123'],
+      });
 
       // Test disconnect event
       capturedEventHandlers.disconnect();
@@ -287,19 +295,26 @@ describe('MetaMaskSdkClient', () => {
         accounts: [],
         selectedAccount: undefined,
         selectedChainId: undefined,
-        connect: jest.fn().mockResolvedValue({ accounts: ['0x123'], chainId: 1 }),
+        connect: jest
+          .fn()
+          .mockResolvedValue({ accounts: ['0x123'], chainId: '0x1' }),
       };
       mockCreateEVMClient.mockResolvedValue(noSessionMock);
       await MetaMaskSdkClient.init(mockConfig);
 
       await MetaMaskSdkClient.connect([1, 137]);
 
-      expect(noSessionMock.connect).toHaveBeenCalledWith({ chainIds: [1, 137] });
+      expect(noSessionMock.connect).toHaveBeenCalledWith({
+        chainIds: ['0x1', '0x89'],
+      });
     });
 
     it('should return cached session if already connected', async () => {
       // mockSdk starts with accounts/selectedAccount/selectedChainId already set
-      mockSdk.connect.mockResolvedValue({ accounts: ['0xnew'], chainId: 137 });
+      mockSdk.connect.mockResolvedValue({
+        accounts: ['0xnew'],
+        chainId: '0x89',
+      });
       await MetaMaskSdkClient.init(mockConfig);
 
       // Cache was populated during init
@@ -307,8 +322,10 @@ describe('MetaMaskSdkClient', () => {
 
       // Should return cached session without calling sdk.connect
       expect(mockSdk.connect).not.toHaveBeenCalled();
-      expect(result.accounts).toContain('0x1234567890abcdef1234567890abcdef12345678');
-      expect(result.chainId).toBe(1);
+      expect(result.accounts).toContain(
+        '0x1234567890abcdef1234567890abcdef12345678',
+      );
+      expect(result.chainId).toBe('0x1');
     });
 
     it('should deduplicate concurrent connect calls', async () => {
@@ -317,7 +334,9 @@ describe('MetaMaskSdkClient', () => {
         accounts: [],
         selectedAccount: undefined,
         selectedChainId: undefined,
-        connect: jest.fn().mockResolvedValue({ accounts: ['0x123'], chainId: 1 }),
+        connect: jest
+          .fn()
+          .mockResolvedValue({ accounts: ['0x123'], chainId: '0x1' }),
       };
       mockCreateEVMClient.mockResolvedValue(noSessionMock);
       await MetaMaskSdkClient.init(mockConfig);
@@ -365,7 +384,7 @@ describe('MetaMaskSdkClient', () => {
       await MetaMaskSdkClient.switchChain(137);
 
       expect(mockSdk.switchChain).toHaveBeenCalledWith({
-        chainId: 137,
+        chainId: '0x89',
         chainConfiguration: undefined,
       });
     });
@@ -381,7 +400,7 @@ describe('MetaMaskSdkClient', () => {
       await MetaMaskSdkClient.switchChain(137, chainConfig);
 
       expect(mockSdk.switchChain).toHaveBeenCalledWith({
-        chainId: 137,
+        chainId: '0x89',
         chainConfiguration: chainConfig,
       });
     });

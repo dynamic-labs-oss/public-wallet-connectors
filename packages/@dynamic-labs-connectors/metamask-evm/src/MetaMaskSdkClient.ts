@@ -4,7 +4,11 @@
 import type { MetamaskConnectEVM } from '@metamask/connect-evm';
 import { logger } from '@dynamic-labs/wallet-connector-core';
 
-import { buildSupportedNetworks, type CaipChainId, type EvmNetwork } from './utils.js';
+import {
+  buildSupportedNetworks,
+  type HexChainId,
+  type EvmNetwork,
+} from './utils.js';
 
 /** Maximum time to wait for SDK to leave 'pending' state during init */
 const SDK_READY_POLL_MAX_MS = 1000;
@@ -37,9 +41,13 @@ export class MetaMaskSdkClient {
   private static instance: MetamaskConnectEVM | null = null;
   private static displayUri: string | undefined = undefined;
   private static initPromise: Promise<void> | null = null;
-  private static connectPromise: Promise<{ accounts: string[]; chainId: number }> | null = null;
+  private static connectPromise: Promise<{
+    accounts: string[];
+    chainId: string;
+  }> | null = null;
   private static requestAccountsPromise: Promise<unknown> | null = null;
-  private static pendingDisplayUriCallback: ((uri: string) => void) | null = null;
+  private static pendingDisplayUriCallback: ((uri: string) => void) | null =
+    null;
 
   // Cached session state to avoid races where SDK instance fields lag behind
   private static cachedAccounts: string[] = [];
@@ -78,7 +86,9 @@ export class MetaMaskSdkClient {
   };
 
   /** Internal initialization logic */
-  private static doInit = async (config: MetaMaskSdkClientConfig): Promise<void> => {
+  private static doInit = async (
+    config: MetaMaskSdkClientConfig,
+  ): Promise<void> => {
     // Guard against SSR - SDK requires browser environment
     if (typeof window === 'undefined') {
       return;
@@ -87,7 +97,9 @@ export class MetaMaskSdkClient {
     const supportedNetworks = buildSupportedNetworks(config.evmNetworks);
 
     if (Object.keys(supportedNetworks).length === 0) {
-      throw new Error('[MetaMaskSdkClient] No valid networks with RPC URLs provided');
+      throw new Error(
+        '[MetaMaskSdkClient] No valid networks with RPC URLs provided',
+      );
     }
 
     try {
@@ -99,7 +111,7 @@ export class MetaMaskSdkClient {
           url: config.dappUrl ?? window.location.origin,
         },
         api: {
-          supportedNetworks: supportedNetworks as Record<CaipChainId, string>,
+          supportedNetworks: supportedNetworks as Record<HexChainId, string>,
         },
         // Enable headless mode so MetaMask doesn't show its own QR modal.
         // Instead, display_uri events are emitted for Dynamic to handle.
@@ -158,7 +170,8 @@ export class MetaMaskSdkClient {
 
       logger.debug('[MetaMaskSdkClient] init complete', { status: sdk.status });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       logger.error('[MetaMaskSdkClient] Failed to initialize:', errorMessage);
       throw error;
     }
@@ -167,13 +180,17 @@ export class MetaMaskSdkClient {
   /** Get the SDK instance. Throws if not initialized. */
   static getInstance = (): MetamaskConnectEVM => {
     if (!MetaMaskSdkClient.instance) {
-      throw new Error('[MetaMaskSdkClient] Not initialized. Call init() first.');
+      throw new Error(
+        '[MetaMaskSdkClient] Not initialized. Call init() first.',
+      );
     }
     return MetaMaskSdkClient.instance;
   };
 
   /** Get the EIP-1193 provider */
-  static getProvider = (): ReturnType<MetamaskConnectEVM['getProvider']> | undefined => {
+  static getProvider = ():
+    | ReturnType<MetamaskConnectEVM['getProvider']>
+    | undefined => {
     return MetaMaskSdkClient.instance?.getProvider();
   };
 
@@ -191,12 +208,18 @@ export class MetaMaskSdkClient {
 
   /** Get the selected (active) account */
   static getSelectedAccount = (): string | undefined => {
-    return MetaMaskSdkClient.instance?.selectedAccount ?? MetaMaskSdkClient.cachedSelectedAccount;
+    return (
+      MetaMaskSdkClient.instance?.selectedAccount ??
+      MetaMaskSdkClient.cachedSelectedAccount
+    );
   };
 
   /** Get the selected chain ID (hex format like 0x1) */
   static getSelectedChainId = (): string | undefined => {
-    return MetaMaskSdkClient.instance?.selectedChainId ?? MetaMaskSdkClient.cachedSelectedChainId;
+    return (
+      MetaMaskSdkClient.instance?.selectedChainId ??
+      MetaMaskSdkClient.cachedSelectedChainId
+    );
   };
 
   /** Update cached accounts (used by connector when calling provider methods directly) */
@@ -239,7 +262,9 @@ export class MetaMaskSdkClient {
    * Connect to MetaMask with the given chain IDs.
    * Returns cached session if already connected to avoid duplicate prompts.
    */
-  static connect = async (chainIds: number[]): Promise<{ accounts: string[]; chainId: number }> => {
+  static connect = async (
+    chainIds: number[],
+  ): Promise<{ accounts: string[]; chainId: string }> => {
     const sdk = MetaMaskSdkClient.getInstance();
 
     // Deduplicate concurrent connect calls
@@ -248,27 +273,37 @@ export class MetaMaskSdkClient {
     }
 
     // Return cached session if available (avoids prompting user again)
-    const existingAccount = MetaMaskSdkClient.cachedSelectedAccount ?? sdk.selectedAccount;
-    const existingChainId = MetaMaskSdkClient.cachedSelectedChainId ?? sdk.selectedChainId;
+    const existingAccount =
+      MetaMaskSdkClient.cachedSelectedAccount ?? sdk.selectedAccount;
+    const existingChainId =
+      MetaMaskSdkClient.cachedSelectedChainId ?? sdk.selectedChainId;
 
     if (existingAccount && existingChainId) {
-      const accounts = MetaMaskSdkClient.cachedAccounts.length > 0
-        ? MetaMaskSdkClient.cachedAccounts
-        : (sdk.accounts ?? []);
+      const accounts =
+        MetaMaskSdkClient.cachedAccounts.length > 0
+          ? MetaMaskSdkClient.cachedAccounts
+          : sdk.accounts ?? [];
       if (accounts.length > 0) {
-        // parseInt with base 16 handles '0x1', fallback to base 10 for decimal strings
-        const numericChainId = parseInt(existingChainId, 16) || parseInt(existingChainId, 10);
-        return { accounts, chainId: numericChainId };
+        return { accounts, chainId: existingChainId };
       }
     }
 
+    // Convert numeric chain IDs to hex format for SDK
+    const hexChainIds = chainIds.map(
+      (id) => `0x${id.toString(16)}` as `0x${string}`,
+    );
+
     // No cached session - this will prompt the user
-    MetaMaskSdkClient.connectPromise = sdk.connect({ chainIds })
+    MetaMaskSdkClient.connectPromise = sdk
+      .connect({ chainIds: hexChainIds })
       .then((result) => {
         MetaMaskSdkClient.cachedAccounts = result.accounts ?? [];
         MetaMaskSdkClient.cachedSelectedAccount = result.accounts?.[0];
-        MetaMaskSdkClient.cachedSelectedChainId = `0x${result.chainId.toString(16)}`;
-        return result;
+        MetaMaskSdkClient.cachedSelectedChainId = result.chainId;
+        return {
+          accounts: result.accounts as string[],
+          chainId: result.chainId as string,
+        };
       })
       .finally(() => {
         MetaMaskSdkClient.connectPromise = null;
@@ -278,7 +313,9 @@ export class MetaMaskSdkClient {
   };
 
   /** Deduplicate concurrent eth_requestAccounts calls (prevents double MetaMask prompts) */
-  static withRequestAccountsLock = async <T>(fn: () => Promise<T>): Promise<T> => {
+  static withRequestAccountsLock = async <T>(
+    fn: () => Promise<T>,
+  ): Promise<T> => {
     if (MetaMaskSdkClient.requestAccountsPromise) {
       return MetaMaskSdkClient.requestAccountsPromise as Promise<T>;
     }
@@ -297,20 +334,26 @@ export class MetaMaskSdkClient {
     MetaMaskSdkClient.clearSessionState();
   };
 
-  static hasEmittedAutoConnect = (): boolean => MetaMaskSdkClient.autoConnectEmitted;
+  static hasEmittedAutoConnect = (): boolean =>
+    MetaMaskSdkClient.autoConnectEmitted;
   static markAutoConnectEmitted = (): void => {
     MetaMaskSdkClient.autoConnectEmitted = true;
   };
 
   /** Switch to a different chain */
-  static switchChain = async (chainId: number, chainConfiguration?: {
-    chainName: string;
-    rpcUrls: string[];
-    nativeCurrency: { name: string; symbol: string; decimals: number };
-    blockExplorerUrls?: string[];
-  }): Promise<void> => {
+  static switchChain = async (
+    chainId: number,
+    chainConfiguration?: {
+      chainName: string;
+      rpcUrls: string[];
+      nativeCurrency: { name: string; symbol: string; decimals: number };
+      blockExplorerUrls?: string[];
+    },
+  ): Promise<void> => {
     const sdk = MetaMaskSdkClient.getInstance();
-    await sdk.switchChain({ chainId, chainConfiguration });
+    // Convert numeric chainId to hex format for SDK
+    const hexChainId = `0x${chainId.toString(16)}` as `0x${string}`;
+    await sdk.switchChain({ chainId: hexChainId, chainConfiguration });
   };
 
   /** Check if session was recovered (status is 'connected' and has accounts) */

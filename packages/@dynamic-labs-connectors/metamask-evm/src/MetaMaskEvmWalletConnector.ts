@@ -1,6 +1,12 @@
-import { logger, type GetAddressOpts } from '@dynamic-labs/wallet-connector-core';
+import {
+  logger,
+  type GetAddressOpts,
+} from '@dynamic-labs/wallet-connector-core';
 import { type EthereumWalletConnectorOpts } from '@dynamic-labs/ethereum-core';
-import { EthereumInjectedConnector, type IEthereum } from '@dynamic-labs/ethereum';
+import {
+  EthereumInjectedConnector,
+  type IEthereum,
+} from '@dynamic-labs/ethereum';
 
 import { MetaMaskSdkClient } from './MetaMaskSdkClient.js';
 import { toNumericChainId } from './utils.js';
@@ -40,7 +46,10 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
         },
       });
     } catch (error) {
-      logger.error('[MetaMaskEvmWalletConnector] constructor super() failed:', error);
+      logger.error(
+        '[MetaMaskEvmWalletConnector] constructor super() failed:',
+        error,
+      );
       throw error;
     }
   }
@@ -54,9 +63,13 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   override isInstalledOnBrowser(): boolean {
     // Prefer EIP-6963 detection via ethProviderHelper
     try {
-      const helper = (this as unknown as {
-        ethProviderHelper?: { eip6963ProviderLookup?: (rdns: string) => unknown };
-      }).ethProviderHelper;
+      const helper = (
+        this as unknown as {
+          ethProviderHelper?: {
+            eip6963ProviderLookup?: (rdns: string) => unknown;
+          };
+        }
+      ).ethProviderHelper;
       const eip6963Provider = helper?.eip6963ProviderLookup?.('io.metamask');
       if (eip6963Provider) return true;
     } catch {
@@ -70,7 +83,9 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       | undefined;
     if (!eth) return false;
     if (Array.isArray(eth.providers)) {
-      return eth.providers.some((p) => Boolean((p as { isMetaMask?: boolean } | undefined)?.isMetaMask));
+      return eth.providers.some((p) =>
+        Boolean((p as { isMetaMask?: boolean } | undefined)?.isMetaMask),
+      );
     }
     return Boolean(eth.isMetaMask);
   }
@@ -88,7 +103,9 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       // If already initialized and has session, emit autoConnect (deduped globally)
       if (accounts.length > 0 && !MetaMaskSdkClient.hasEmittedAutoConnect()) {
         MetaMaskSdkClient.markAutoConnectEmitted();
-        this.walletConnectorEventsEmitter.emit('autoConnect', { connector: this });
+        this.walletConnectorEventsEmitter.emit('autoConnect', {
+          connector: this,
+        });
       }
       return;
     }
@@ -112,21 +129,33 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
         },
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error('[MetaMaskEvmWalletConnector] SDK init failed:', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error(
+        '[MetaMaskEvmWalletConnector] SDK init failed:',
+        errorMessage,
+      );
       // Still emit providerReady so the connector shows up
     }
 
     // Emit providerReady so Dynamic can show this connector
-    this.walletConnectorEventsEmitter.emit('providerReady', { connector: this });
+    this.walletConnectorEventsEmitter.emit('providerReady', {
+      connector: this,
+    });
 
     // If session was recovered, emit autoConnect
     const accounts = MetaMaskSdkClient.getAccounts();
     const chainId = MetaMaskSdkClient.getSelectedChainId();
 
-    if (accounts.length > 0 && chainId && !MetaMaskSdkClient.hasEmittedAutoConnect()) {
+    if (
+      accounts.length > 0 &&
+      chainId &&
+      !MetaMaskSdkClient.hasEmittedAutoConnect()
+    ) {
       MetaMaskSdkClient.markAutoConnectEmitted();
-      this.walletConnectorEventsEmitter.emit('autoConnect', { connector: this });
+      this.walletConnectorEventsEmitter.emit('autoConnect', {
+        connector: this,
+      });
     }
   }
 
@@ -154,13 +183,16 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
    */
   private async handleProviderRequest(
     sdkProvider: NonNullable<ReturnType<typeof MetaMaskSdkClient.getProvider>>,
-    args: { method: string; params?: unknown[] }
+    args: { method: string; params?: unknown[] },
   ): Promise<unknown> {
     const cachedAccounts = MetaMaskSdkClient.getAccounts();
 
     // Return cached accounts immediately for both eth_accounts and eth_requestAccounts
     // This prevents unnecessary SDK calls and duplicate connection prompts
-    if (args.method === 'eth_accounts' || args.method === 'eth_requestAccounts') {
+    if (
+      args.method === 'eth_accounts' ||
+      args.method === 'eth_requestAccounts'
+    ) {
       if (cachedAccounts.length > 0) {
         return cachedAccounts;
       }
@@ -211,7 +243,9 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
    * Get the connected address. Triggers connection if not connected.
    * Main entry point for wallet connection.
    */
-  override async getAddress(opts?: GetAddressOpts): Promise<string | undefined> {
+  override async getAddress(
+    opts?: GetAddressOpts,
+  ): Promise<string | undefined> {
     // Deduplicate concurrent getAddress calls
     if (MetaMaskEvmWalletConnector.getAddressPromise) {
       return MetaMaskEvmWalletConnector.getAddressPromise;
@@ -247,13 +281,18 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
         const pollAttempts = shouldPollAccounts ? ACCOUNTS_POLL_ATTEMPTS : 1;
 
         for (let i = 0; i < pollAttempts; i++) {
-          const accounts = (await provider.request({ method: 'eth_accounts' })) as string[] | undefined;
+          const accounts = (await provider.request({
+            method: 'eth_accounts',
+          })) as string[] | undefined;
 
           if (Array.isArray(accounts) && accounts.length > 0) {
             MetaMaskSdkClient.setCachedAccounts(accounts);
             try {
-              const chainIdResult = await provider.request({ method: 'eth_chainId' });
-              const chainId = typeof chainIdResult === 'string' ? chainIdResult : undefined;
+              const chainIdResult = await provider.request({
+                method: 'eth_chainId',
+              });
+              const chainId =
+                typeof chainIdResult === 'string' ? chainIdResult : undefined;
               MetaMaskSdkClient.setCachedSelectedChainId(chainId);
             } catch {
               // ignore
@@ -270,7 +309,9 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
         // Important: we must use sdk.connect({ chainIds }) even when the extension is installed.
         // eth_requestAccounts only authorizes the current chain, which leads to repeated
         // "Review permissions" prompts when switching chains.
-        const chainIds = this.evmNetworks.map((n) => toNumericChainId(n.chainId));
+        const chainIds = this.evmNetworks.map((n) =>
+          toNumericChainId(n.chainId),
+        );
         const { accounts } = await MetaMaskSdkClient.connect(chainIds);
         if (!accounts?.length) return undefined;
         return accounts[0];

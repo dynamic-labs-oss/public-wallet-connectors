@@ -3,15 +3,20 @@
  */
 export interface EvmNetwork {
   chainId: number | string;
-  rpcUrls?: string[] | {
-    default?: {
-      http?: string | string[];
-    };
-  };
+  rpcUrls?:
+    | string[]
+    | {
+        default?: {
+          http?: string | string[];
+        };
+      };
 }
 
 /** CAIP-2 chain ID for EVM (e.g., "eip155:1") */
 export type CaipChainId = `eip155:${number}`;
+
+/** Hex chain ID (e.g., "0x1") */
+export type HexChainId = `0x${string}`;
 
 /**
  * Convert chainId to numeric format.
@@ -42,19 +47,20 @@ export function extractRpcUrl(network: EvmNetwork): string | undefined {
 
 /**
  * Build supportedNetworks map for MetaMask SDK.
- * Maps CAIP-2 chain IDs to RPC URLs.
+ * Maps hex chain IDs to RPC URLs.
  * Networks without RPC URLs are skipped.
  */
 export function buildSupportedNetworks(
   evmNetworks: EvmNetwork[],
-): Record<CaipChainId, string> {
-  const result: Record<CaipChainId, string> = {};
+): Record<HexChainId, string> {
+  const result: Record<HexChainId, string> = {};
 
   for (const network of evmNetworks) {
     const rpcUrl = extractRpcUrl(network);
     if (rpcUrl) {
       const chainId = toNumericChainId(network.chainId);
-      result[`eip155:${chainId}`] = rpcUrl;
+      const hexChainId = `0x${chainId.toString(16)}` as HexChainId;
+      result[hexChainId] = rpcUrl;
     }
   }
 
