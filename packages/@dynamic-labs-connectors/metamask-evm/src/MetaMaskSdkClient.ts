@@ -261,6 +261,9 @@ export class MetaMaskSdkClient {
   /**
    * Connect to MetaMask with the given chain IDs.
    * Returns cached session if already connected to avoid duplicate prompts.
+   *
+   * Note: After disconnect(), the singleton is reset. The connector must call
+   * init() before connect() to create a fresh SDK instance.
    */
   static connect = async (
     chainIds: number[],
@@ -273,19 +276,13 @@ export class MetaMaskSdkClient {
     }
 
     // Return cached session if available (avoids prompting user again)
-    const existingAccount =
-      MetaMaskSdkClient.cachedSelectedAccount ?? sdk.selectedAccount;
-    const existingChainId =
-      MetaMaskSdkClient.cachedSelectedChainId ?? sdk.selectedChainId;
+    // This handles page refresh where SDK recovers session from localStorage
+    const existingAccounts = sdk.accounts ?? [];
+    const existingChainId = sdk.selectedChainId;
 
-    if (existingAccount && existingChainId) {
-      const accounts =
-        MetaMaskSdkClient.cachedAccounts.length > 0
-          ? MetaMaskSdkClient.cachedAccounts
-          : sdk.accounts ?? [];
-      if (accounts.length > 0) {
-        return { accounts, chainId: existingChainId };
-      }
+    if (existingAccounts.length > 0 && existingChainId) {
+      logger.debug('[MetaMaskSdkClient] Returning existing session');
+      return { accounts: existingAccounts, chainId: existingChainId };
     }
 
     // Convert numeric chain IDs to hex format for SDK
@@ -293,7 +290,8 @@ export class MetaMaskSdkClient {
       (id) => `0x${id.toString(16)}` as `0x${string}`,
     );
 
-    // No cached session - this will prompt the user
+    // Start connection - no defensive disconnect needed since we reinstantiate
+    // the SDK after disconnect(), ensuring fresh state and listeners
     MetaMaskSdkClient.connectPromise = sdk
       .connect({ chainIds: hexChainIds })
       .then((result) => {
@@ -327,10 +325,26 @@ export class MetaMaskSdkClient {
     return MetaMaskSdkClient.requestAccountsPromise as Promise<T>;
   };
 
-  /** Disconnect from MetaMask */
+  /**
+   * Disconnect from MetaMask and reset the singleton.
+   *
+   * By resetting the singleton, the next connect() will create a fresh SDK
+   * instance with fresh event listeners. This avoids issues with stale state
+   * and the SDK's internal listener management.
+   */
   static disconnect = async (): Promise<void> => {
     if (!MetaMaskSdkClient.instance) return;
-    await MetaMaskSdkClient.instance.disconnect();
+
+    try {
+      await MetaMaskSdkClient.instance.disconnect();
+    } catch {
+      // Ignore disconnect errors - we're resetting anyway
+    }
+
+    // Reset singleton - next init() will create fresh SDK instance
+    MetaMaskSdkClient.instance = null;
+    MetaMaskSdkClient.isInitialized = false;
+    MetaMaskSdkClient.initPromise = null;
     MetaMaskSdkClient.clearSessionState();
   };
 
