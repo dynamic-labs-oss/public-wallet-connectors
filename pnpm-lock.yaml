@@ -254,24 +254,17 @@ importers:
   packages/@dynamic-labs-connectors/metamask-evm:
     dependencies:
       '@dynamic-labs/ethereum':
-        specifier: ^4.31.2
+        specifier: '>=4.31.2'
         version: 4.31.2(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(@types/react@19.2.2)(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.5.4)(utf-8-validate@5.0.10)(viem@2.37.5(bufferutil@4.0.9)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.22.4))(zod@3.22.4)
       '@dynamic-labs/ethereum-core':
-        specifier: ^4.31.2
+        specifier: '>=4.31.2'
         version: 4.31.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(viem@2.37.5(bufferutil@4.0.9)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.22.4))
       '@dynamic-labs/wallet-connector-core':
-        specifier: ^4.31.2
+        specifier: '>=4.31.2'
         version: 4.37.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@metamask/connect-evm':
-        specifier: file:../../../tmp/connect-monorepo/packages/connect-evm
-        version: file:tmp/connect-monorepo/packages/connect-evm(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      viem:
-        specifier: ^2.21.55
-        version: 2.37.5(bufferutil@4.0.9)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.22.4)
-    devDependencies:
-      '@dynamic-labs/utils':
-        specifier: ^4.31.2
-        version: 4.37.0
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
 
   packages/@dynamic-labs-connectors/safe-evm:
     dependencies:
@@ -1957,12 +1950,12 @@ packages:
     resolution: {integrity: sha512-807Y6JxqeY3tckSRDse96RmHV6atDsSPLD/x9KIync8ccFjOwSZlv0n4NA5Bsi0znjOogU0jEe5hPNIDTFzFRg==}
     engines: {node: ^18.18 || >=20}
 
-  '@metamask/connect-evm@file:tmp/connect-monorepo/packages/connect-evm':
-    resolution: {directory: tmp/connect-monorepo/packages/connect-evm, type: directory}
+  '@metamask/connect-evm@0.5.0':
+    resolution: {integrity: sha512-fcMfqiLib0jsjddLuCgWImyXE/lO2qElhY+l6FQJEwiMB+9pvaXIAcH3eE1f+1CLRJoV+5cskDjiXoZ7ckjzkw==}
     engines: {node: '>=20.19.0'}
 
-  '@metamask/connect-multichain@0.5.1':
-    resolution: {integrity: sha512-kiubQhpzuKEqmE4S20woaMoj2uAAEUzUoYHzTXqi5RDcoe2HmFqtw0dmSReGO6COP6fouKnt7eNj9Ht9OHbNZQ==}
+  '@metamask/connect-multichain@0.6.0':
+    resolution: {integrity: sha512-7CfoY6GQ1ahyWp2cvQSzUzOPV+UqL1k2DJYZAQLoqaY2nFqWsEtpK7kZtRdYCwzXJCC8oeFwxppIqm58hjWVOQ==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@react-native-async-storage/async-storage': ^1.23
@@ -10551,11 +10544,11 @@ snapshots:
       - '@babel/runtime'
       - supports-color
 
-  '@metamask/connect-evm@file:tmp/connect-monorepo/packages/connect-evm(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+  '@metamask/connect-evm@0.5.0(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       '@metamask/analytics': 0.2.0
       '@metamask/chain-agnostic-permission': 1.4.0(@babel/runtime@7.28.4)
-      '@metamask/connect-multichain': 0.5.1(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@metamask/connect-multichain': 0.6.0(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@metamask/utils': 11.9.0
     transitivePeerDependencies:
       - '@babel/runtime'
@@ -10565,7 +10558,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@metamask/connect-multichain@0.5.1(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+  '@metamask/connect-multichain@0.6.0(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       '@metamask/analytics': 0.2.0
       '@metamask/mobile-wallet-protocol-core': 0.3.1

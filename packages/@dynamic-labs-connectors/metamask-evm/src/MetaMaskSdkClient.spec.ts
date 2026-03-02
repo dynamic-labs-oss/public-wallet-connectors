@@ -26,7 +26,16 @@ afterAll(() => {
   global.window = originalWindow;
 });
 
-const mockSdk = {
+const mockSdk: {
+  getProvider: jest.Mock;
+  status: string;
+  accounts: string[];
+  selectedAccount: string | undefined;
+  selectedChainId: string | undefined;
+  connect: jest.Mock;
+  disconnect: jest.Mock;
+  switchChain: jest.Mock;
+} = {
   getProvider: jest.fn(),
   status: 'connected',
   accounts: ['0x1234567890abcdef1234567890abcdef12345678'],
@@ -356,13 +365,11 @@ describe('MetaMaskSdkClient', () => {
       await expect(MetaMaskSdkClient.disconnect()).resolves.not.toThrow();
     });
 
-    it('should call SDK disconnect and clear state', async () => {
+    it('should call SDK disconnect and clear state but keep instance alive', async () => {
       await MetaMaskSdkClient.init(mockConfig);
 
-      // Set some state
       MetaMaskSdkClient.setCachedAccounts(['0x123']);
 
-      // Mock the disconnect to also clear mockSdk accounts (simulating real behavior)
       mockSdk.disconnect.mockImplementation(() => {
         mockSdk.accounts = [];
         mockSdk.selectedAccount = undefined;
@@ -375,6 +382,8 @@ describe('MetaMaskSdkClient', () => {
       expect(mockSdk.disconnect).toHaveBeenCalled();
       expect(MetaMaskSdkClient.getAccounts()).toEqual([]);
       expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
+      expect(MetaMaskSdkClient.isInitialized).toBe(true);
+      expect(() => MetaMaskSdkClient.getInstance()).not.toThrow();
     });
   });
 
@@ -403,51 +412,6 @@ describe('MetaMaskSdkClient', () => {
         chainId: '0x89',
         chainConfiguration: chainConfig,
       });
-    });
-  });
-
-  describe('waitForSessionRecovery', () => {
-    it('should return false if not initialized', async () => {
-      const result = await MetaMaskSdkClient.waitForSessionRecovery();
-      expect(result).toBe(false);
-    });
-
-    it('should return true if connected with accounts', async () => {
-      // Ensure mockSdk has proper state for connected session
-      mockSdk.status = 'connected';
-      mockSdk.accounts = ['0x1234567890abcdef1234567890abcdef12345678'];
-
-      await MetaMaskSdkClient.init(mockConfig);
-      const result = await MetaMaskSdkClient.waitForSessionRecovery();
-      expect(result).toBe(true);
-    });
-
-    it('should return false if loaded with no accounts', async () => {
-      mockSdk.accounts = [];
-      mockSdk.status = 'loaded';
-      await MetaMaskSdkClient.init(mockConfig);
-
-      const result = await MetaMaskSdkClient.waitForSessionRecovery();
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('hasSession', () => {
-    it('should return false if not initialized', () => {
-      expect(MetaMaskSdkClient.hasSession()).toBe(false);
-    });
-
-    it('should return false if no accounts', async () => {
-      mockSdk.accounts = [];
-      await MetaMaskSdkClient.init(mockConfig);
-
-      expect(MetaMaskSdkClient.hasSession()).toBe(false);
-    });
-
-    it('should return true if accounts exist', async () => {
-      mockSdk.accounts = ['0x1234567890abcdef1234567890abcdef12345678'];
-      await MetaMaskSdkClient.init(mockConfig);
-      expect(MetaMaskSdkClient.hasSession()).toBe(true);
     });
   });
 
