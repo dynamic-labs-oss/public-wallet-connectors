@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   DynamicWidget,
   useDynamicContext,
@@ -10,6 +10,7 @@ export default function Home() {
   const { primaryWallet, user, handleLogOut, network } = useDynamicContext();
   const [signResult, setSignResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const handleSignMessage = async () => {
     setError(null);
@@ -60,6 +61,7 @@ export default function Home() {
             Connection Status
           </h2>
 
+          {mounted && (
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Connected:</span>
@@ -106,9 +108,10 @@ export default function Home() {
               </div>
             )}
           </div>
+          )}
         </div>
 
-        {primaryWallet && (
+        {mounted && primaryWallet && (
           <div className="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 className="text-xl font-semibold text-gray-800">Actions</h2>
 
