@@ -22,6 +22,7 @@ jest.mock('@dynamic-labs/wallet-connector-core', () => ({
   logger: {
     debug: jest.fn(),
     error: jest.fn(),
+    warn: jest.fn(),
   },
 }));
 

@@ -137,12 +137,6 @@ export class MetaMaskSolanaSdkClient {
     }
 
     const result = await connectFn({ silent: false });
-    console.log('[MM-SOL-SDK] connect result', {
-      accountCount: result.accounts.length,
-      accounts: result.accounts.map((a) => a.address),
-      walletScope: (wallet as unknown as { scope?: string })?.scope,
-      walletChains: (wallet as unknown as { chains?: unknown })?.chains,
-    });
     const firstAccount = result.accounts[0];
     return firstAccount?.address;
   };
