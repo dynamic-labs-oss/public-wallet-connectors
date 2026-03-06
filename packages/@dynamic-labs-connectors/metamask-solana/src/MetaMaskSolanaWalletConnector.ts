@@ -25,6 +25,7 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
  */
 export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
   private signer: ISolana | undefined;
+  private autoConnectEmitted = false;
 
   override name = 'MetaMask';
   override canConnectViaQrCode = true;
@@ -54,9 +55,7 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
 
   override async init(): Promise<void> {
     if (MetaMaskSolanaSdkClient.isInitialized) {
-      this.walletConnectorEventsEmitter.emit('providerReady', {
-        connector: this,
-      });
+      this.emitAutoConnectIfNeeded();
       return;
     }
 
@@ -65,20 +64,20 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
         dappName: 'Dynamic',
       });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      logger.error(
-        '[MetaMaskSolanaWalletConnector] SDK init failed:',
-        errorMessage,
-      );
+      logger.error('[MetaMaskSolanaWalletConnector] SDK init failed:', error);
     }
 
     this.walletConnectorEventsEmitter.emit('providerReady', {
       connector: this,
     });
+    this.emitAutoConnectIfNeeded();
+  }
 
+  private emitAutoConnectIfNeeded(): void {
+    if (this.autoConnectEmitted) return;
     const accounts = MetaMaskSolanaSdkClient.getAccounts();
     if (accounts.length > 0) {
+      this.autoConnectEmitted = true;
       this.walletConnectorEventsEmitter.emit('autoConnect', {
         connector: this,
       });
@@ -109,21 +108,12 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
 
     const encoded = new TextEncoder().encode(messageToSign);
     const result = await signer.signMessage(encoded);
-    if (!result) return undefined;
+    const signature = (result as { signature: Uint8Array })?.signature;
+    if (!signature) return undefined;
 
-    const signatureBytes =
-      result instanceof Uint8Array
-        ? result
-        : (result as { signature: Uint8Array }).signature;
-    if (!signatureBytes) return undefined;
-
-    return uint8ArrayToBase64(signatureBytes);
+    return uint8ArrayToBase64(signature);
   }
 
-  /**
-   * Get the connected address. Triggers connection if not connected.
-   * Accepts GetAddressOpts so Dynamic can pass onDisplayUri for QR code flows.
-   */
   override async getAddress(
     opts?: GetAddressOpts,
   ): Promise<string | undefined> {
@@ -134,28 +124,14 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
       await this.init();
     }
 
-    // Register display_uri listener for QR code flow.
-    // The multichain core emits this event with a deeplink URI that
-    // Dynamic renders as a QR code for mobile wallet scanning.
-    const core = MetaMaskSolanaSdkClient.getCore();
-    let displayUriHandler: ((uri: string) => void) | undefined;
-
-    if (core && opts?.onDisplayUri) {
-      displayUriHandler = (uri: string) => {
-        opts.onDisplayUri!(uri);
-      };
-      core.on('display_uri', displayUriHandler as (...args: unknown[]) => void);
-    }
+    const unsubscribe = opts?.onDisplayUri
+      ? MetaMaskSolanaSdkClient.onDisplayUri(opts.onDisplayUri)
+      : undefined;
 
     try {
       return await MetaMaskSolanaSdkClient.connect();
     } finally {
-      if (core && displayUriHandler) {
-        core.off(
-          'display_uri',
-          displayUriHandler as (...args: unknown[]) => void,
-        );
-      }
+      unsubscribe?.();
     }
   }
 

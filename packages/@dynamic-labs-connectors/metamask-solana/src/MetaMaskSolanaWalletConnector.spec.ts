@@ -77,6 +77,9 @@ describe('MetaMaskSolanaWalletConnector', () => {
     );
     (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(null);
     (MetaMaskSolanaSdkClient.getCore as jest.Mock).mockReturnValue(null);
+    (MetaMaskSolanaSdkClient.onDisplayUri as jest.Mock).mockReturnValue(
+      jest.fn(),
+    );
   });
 
   describe('constructor', () => {
@@ -164,7 +167,39 @@ describe('MetaMaskSolanaWalletConnector', () => {
       await connector.init();
 
       expect(MetaMaskSolanaSdkClient.init).not.toHaveBeenCalled();
-      expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'providerReady',
+        expect.anything(),
+      );
+    });
+
+    it('should emit autoConnect on re-init if accounts exist', async () => {
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([
+        'SoLaNa1234',
+      ]);
+
+      await connector.init();
+
+      expect(MetaMaskSolanaSdkClient.init).not.toHaveBeenCalled();
+      expect(emitSpy).toHaveBeenCalledWith('autoConnect', { connector });
+    });
+
+    it('should only emit autoConnect once per instance', async () => {
+      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([
+        'SoLaNa1234',
+      ]);
+
+      await connector.init();
+      emitSpy.mockClear();
+
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+      await connector.init();
+
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'autoConnect',
+        expect.anything(),
+      );
     });
 
     it('should still emit providerReady if init throws', async () => {
@@ -229,27 +264,6 @@ describe('MetaMaskSolanaWalletConnector', () => {
       expect(result!.length).toBeGreaterThan(0);
     });
 
-    it('should handle Uint8Array result directly', async () => {
-      const mockSignature = new Uint8Array([5, 6, 7, 8]);
-      const mockSigner = {
-        signMessage: jest.fn().mockResolvedValue(mockSignature),
-      };
-
-      const { createWalletStandardAdapter } = jest.requireMock(
-        './WalletStandardAdapter.js',
-      );
-      createWalletStandardAdapter.mockReturnValue(mockSigner);
-
-      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue({
-        accounts: [{ address: 'SoLaNa1234' }],
-      });
-      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
-      await connector.connect();
-
-      const result = await connector.signMessage('test');
-
-      expect(typeof result).toBe('string');
-    });
   });
 
   describe('getAddress', () => {
@@ -275,60 +289,32 @@ describe('MetaMaskSolanaWalletConnector', () => {
       expect(address).toBe('SoLaNa1234');
     });
 
-    it('should register display_uri listener for QR code flow', async () => {
-      const mockCore = {
-        on: jest.fn(),
-        off: jest.fn(),
-        mergeOptions: jest.fn(),
-      };
+    it('should register and cleanup onDisplayUri listener', async () => {
+      const unsubscribe = jest.fn();
+      (MetaMaskSolanaSdkClient.onDisplayUri as jest.Mock).mockReturnValue(
+        unsubscribe,
+      );
       (
         MetaMaskSolanaSdkClient.getSelectedAccount as jest.Mock
       ).mockReturnValue(undefined);
-      (MetaMaskSolanaSdkClient.getCore as jest.Mock).mockReturnValue(mockCore);
 
       const onDisplayUri = jest.fn();
       await connector.getAddress({ onDisplayUri } as any);
 
-      expect(mockCore.on).toHaveBeenCalledWith(
-        'display_uri',
-        expect.any(Function),
+      expect(MetaMaskSolanaSdkClient.onDisplayUri).toHaveBeenCalledWith(
+        onDisplayUri,
       );
-      expect(mockCore.off).toHaveBeenCalledWith(
-        'display_uri',
-        expect.any(Function),
-      );
+      expect(unsubscribe).toHaveBeenCalled();
     });
 
-    it('should forward display_uri events to onDisplayUri callback', async () => {
-      const mockCore = {
-        on: jest.fn(),
-        off: jest.fn(),
-        mergeOptions: jest.fn(),
-      };
+    it('should cleanup listener even on error', async () => {
+      const unsubscribe = jest.fn();
+      (MetaMaskSolanaSdkClient.onDisplayUri as jest.Mock).mockReturnValue(
+        unsubscribe,
+      );
       (
         MetaMaskSolanaSdkClient.getSelectedAccount as jest.Mock
       ).mockReturnValue(undefined);
-      (MetaMaskSolanaSdkClient.getCore as jest.Mock).mockReturnValue(mockCore);
-
-      const onDisplayUri = jest.fn();
-      await connector.getAddress({ onDisplayUri } as any);
-
-      const handler = mockCore.on.mock.calls[0][1];
-      handler('metamask://connect?uri=test');
-
-      expect(onDisplayUri).toHaveBeenCalledWith('metamask://connect?uri=test');
-    });
-
-    it('should clean up display_uri listener even on error', async () => {
-      const mockCore = {
-        on: jest.fn(),
-        off: jest.fn(),
-        mergeOptions: jest.fn(),
-      };
-      (
-        MetaMaskSolanaSdkClient.getSelectedAccount as jest.Mock
-      ).mockReturnValue(undefined);
-      (MetaMaskSolanaSdkClient.getCore as jest.Mock).mockReturnValue(mockCore);
       (MetaMaskSolanaSdkClient.connect as jest.Mock).mockRejectedValue(
         new Error('rejected'),
       );
@@ -337,27 +323,17 @@ describe('MetaMaskSolanaWalletConnector', () => {
       await expect(
         connector.getAddress({ onDisplayUri } as any),
       ).rejects.toThrow('rejected');
-
-      expect(mockCore.off).toHaveBeenCalledWith(
-        'display_uri',
-        expect.any(Function),
-      );
+      expect(unsubscribe).toHaveBeenCalled();
     });
 
     it('should not register listener when no onDisplayUri callback', async () => {
-      const mockCore = {
-        on: jest.fn(),
-        off: jest.fn(),
-        mergeOptions: jest.fn(),
-      };
       (
         MetaMaskSolanaSdkClient.getSelectedAccount as jest.Mock
       ).mockReturnValue(undefined);
-      (MetaMaskSolanaSdkClient.getCore as jest.Mock).mockReturnValue(mockCore);
 
       await connector.getAddress();
 
-      expect(mockCore.on).not.toHaveBeenCalled();
+      expect(MetaMaskSolanaSdkClient.onDisplayUri).not.toHaveBeenCalled();
     });
   });
 

@@ -162,6 +162,33 @@ describe('MetaMaskSolanaSdkClient', () => {
     });
   });
 
+  describe('onDisplayUri', () => {
+    it('should return noop if core is not initialized', () => {
+      const listener = jest.fn();
+      const unsub = MetaMaskSolanaSdkClient.onDisplayUri(listener);
+      expect(typeof unsub).toBe('function');
+      expect(mockCore.on).not.toHaveBeenCalled();
+    });
+
+    it('should register listener on core', async () => {
+      await MetaMaskSolanaSdkClient.init({});
+      const listener = jest.fn();
+      MetaMaskSolanaSdkClient.onDisplayUri(listener);
+
+      expect(mockCore.on).toHaveBeenCalledWith('display_uri', listener);
+    });
+
+    it('should return working unsubscribe function', async () => {
+      await MetaMaskSolanaSdkClient.init({});
+      const listener = jest.fn();
+      const unsub = MetaMaskSolanaSdkClient.onDisplayUri(listener);
+
+      unsub();
+
+      expect(mockCore.off).toHaveBeenCalledWith('display_uri', listener);
+    });
+  });
+
   describe('reset', () => {
     it('should reset all state', async () => {
       await MetaMaskSolanaSdkClient.init({});

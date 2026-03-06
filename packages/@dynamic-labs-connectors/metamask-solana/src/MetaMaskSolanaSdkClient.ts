@@ -100,6 +100,15 @@ export class MetaMaskSolanaSdkClient {
     return MetaMaskSolanaSdkClient.multichainCore;
   };
 
+  /** Subscribe to display_uri events from the multichain core. Returns an unsubscribe function. */
+  static onDisplayUri = (listener: (uri: string) => void): (() => void) => {
+    const core = MetaMaskSolanaSdkClient.multichainCore;
+    if (!core) return () => { /* noop - core not available */ };
+    const handler = listener as (...args: unknown[]) => void;
+    core.on('display_uri', handler);
+    return () => core.off('display_uri', handler);
+  };
+
   static getAccounts = (): string[] => {
     return (
       MetaMaskSolanaSdkClient.wallet?.accounts.map((a) => a.address) ?? []
