@@ -16,7 +16,6 @@ jest.mock('@dynamic-labs/wallet-connector-core', () => ({
   },
 }));
 
-// Mock window for SSR guard - tests need browser environment
 const originalWindow = global.window;
 beforeAll(() => {
   // @ts-expect-error - mocking window for tests
@@ -60,14 +59,10 @@ describe('MetaMaskSdkClient', () => {
     jest.clearAllMocks();
     MetaMaskSdkClient.reset();
 
-    // Reset mockSdk to default state
     mockSdk.status = 'connected';
     mockSdk.accounts = ['0x1234567890abcdef1234567890abcdef12345678'];
     mockSdk.selectedAccount = '0x1234567890abcdef1234567890abcdef12345678';
     mockSdk.selectedChainId = '0x1';
-    mockSdk.connect.mockClear();
-    mockSdk.disconnect.mockClear();
-    mockSdk.switchChain.mockClear();
 
     mockCreateEVMClient.mockResolvedValue(mockSdk);
   });
@@ -101,138 +96,63 @@ describe('MetaMaskSdkClient', () => {
 
       expect(mockCreateEVMClient).toHaveBeenCalledWith(
         expect.objectContaining({
-          dapp: {
-            name: 'Test DApp',
-            url: 'https://test.com',
-          },
+          dapp: { name: 'Test DApp', url: 'https://test.com' },
           api: {
             supportedNetworks: {
               '0x1': 'https://eth.rpc',
               '0x89': 'https://polygon.rpc',
             },
           },
-          ui: {
-            headless: true,
-            preferExtension: true,
-          },
+          ui: { headless: true, preferExtension: true },
           debug: false,
         }),
       );
     });
 
     it('should throw if no valid networks provided', async () => {
-      const configWithNoRpc: MetaMaskSdkClientConfig = {
-        evmNetworks: [{ chainId: 99999 }],
-      };
-
-      await expect(MetaMaskSdkClient.init(configWithNoRpc)).rejects.toThrow(
+      await expect(
+        MetaMaskSdkClient.init({ evmNetworks: [{ chainId: 99999 }] }),
+      ).rejects.toThrow(
         '[MetaMaskSdkClient] No valid networks with RPC URLs provided',
       );
     });
 
-    it('should cache SDK accounts and state after init', async () => {
-      await MetaMaskSdkClient.init(mockConfig);
-
-      expect(MetaMaskSdkClient.getAccounts()).toEqual([
-        '0x1234567890abcdef1234567890abcdef12345678',
-      ]);
-      expect(MetaMaskSdkClient.getSelectedAccount()).toBe(
-        '0x1234567890abcdef1234567890abcdef12345678',
-      );
-      expect(MetaMaskSdkClient.getSelectedChainId()).toBe('0x1');
-    });
-
-    it('should invoke event callbacks', async () => {
-      const onDisplayUri = jest.fn();
-      const onConnect = jest.fn();
-      const onDisconnect = jest.fn();
-      const onAccountsChanged = jest.fn();
-      const onChainChanged = jest.fn();
-
-      const configWithCallbacks: MetaMaskSdkClientConfig = {
-        ...mockConfig,
-        callbacks: {
-          onDisplayUri,
-          onConnect,
-          onDisconnect,
-          onAccountsChanged,
-          onChainChanged,
-        },
-      };
-
-      let capturedEventHandlers: any;
-      mockCreateEVMClient.mockImplementation((options) => {
-        capturedEventHandlers = options.eventHandlers;
-        return Promise.resolve(mockSdk);
-      });
-
-      await MetaMaskSdkClient.init(configWithCallbacks);
-
-      // Test displayUri event
-      capturedEventHandlers.displayUri('wc:test-uri');
-      expect(onDisplayUri).toHaveBeenCalledWith('wc:test-uri');
-
-      // Test connect event
-      capturedEventHandlers.connect({ chainId: '0x1', accounts: ['0x123'] });
-      expect(onConnect).toHaveBeenCalledWith({
-        chainId: '0x1',
-        accounts: ['0x123'],
-      });
-
-      // Test disconnect event
-      capturedEventHandlers.disconnect();
-      expect(onDisconnect).toHaveBeenCalled();
-
-      // Test accountsChanged event
-      capturedEventHandlers.accountsChanged(['0xnew']);
-      expect(onAccountsChanged).toHaveBeenCalledWith(['0xnew']);
-
-      // Test chainChanged event
-      capturedEventHandlers.chainChanged('0x89');
-      expect(onChainChanged).toHaveBeenCalledWith('0x89');
-    });
-
-    it('should clear session state on disconnect event', async () => {
-      let capturedEventHandlers: any;
-      mockCreateEVMClient.mockImplementation((options) => {
-        capturedEventHandlers = options.eventHandlers;
-        return Promise.resolve(mockSdk);
-      });
-
-      await MetaMaskSdkClient.init(mockConfig);
-
-      // Set a displayUri
-      capturedEventHandlers.displayUri('wc:test-uri');
-      expect(MetaMaskSdkClient.getDisplayUri()).toBe('wc:test-uri');
-
-      // Trigger disconnect - also clear mockSdk state
-      mockSdk.accounts = [];
-      mockSdk.selectedAccount = undefined;
-      mockSdk.selectedChainId = undefined;
-      capturedEventHandlers.disconnect();
-
-      // Should clear session state
-      expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
-      expect(MetaMaskSdkClient.getAccounts()).toEqual([]);
-      expect(MetaMaskSdkClient.getSelectedAccount()).toBeUndefined();
-      expect(MetaMaskSdkClient.getSelectedChainId()).toBeUndefined();
-    });
-
     it('should use default dapp values when not provided', async () => {
-      const minimalConfig: MetaMaskSdkClientConfig = {
+      await MetaMaskSdkClient.init({
         evmNetworks: [{ chainId: 1, rpcUrls: ['https://eth.rpc'] }],
-      };
-
-      await MetaMaskSdkClient.init(minimalConfig);
+      });
 
       expect(mockCreateEVMClient).toHaveBeenCalledWith(
         expect.objectContaining({
-          dapp: {
-            name: 'Dynamic',
-            url: 'https://test.com',
-          },
+          dapp: { name: 'Dynamic', url: 'https://test.com' },
         }),
       );
+    });
+
+    it('should deduplicate concurrent init calls', async () => {
+      await Promise.all([
+        MetaMaskSdkClient.init(mockConfig),
+        MetaMaskSdkClient.init(mockConfig),
+      ]);
+      expect(mockCreateEVMClient).toHaveBeenCalledTimes(1);
+    });
+
+    it('should leave isInitialized false when createEVMClient throws', async () => {
+      mockCreateEVMClient.mockRejectedValue(new Error('SDK load failed'));
+
+      await expect(MetaMaskSdkClient.init(mockConfig)).rejects.toThrow(
+        'SDK load failed',
+      );
+      expect(MetaMaskSdkClient.isInitialized).toBe(false);
+    });
+
+    it('should allow retry after failed init', async () => {
+      mockCreateEVMClient.mockRejectedValueOnce(new Error('transient'));
+      await expect(MetaMaskSdkClient.init(mockConfig)).rejects.toThrow();
+
+      mockCreateEVMClient.mockResolvedValue(mockSdk);
+      await MetaMaskSdkClient.init(mockConfig);
+      expect(MetaMaskSdkClient.isInitialized).toBe(true);
     });
   });
 
@@ -263,73 +183,67 @@ describe('MetaMaskSdkClient', () => {
     });
   });
 
-  describe('getStatus', () => {
-    it('should return not-initialized before init', () => {
-      expect(MetaMaskSdkClient.getStatus()).toBe('not-initialized');
-    });
+  describe('onDisplayUri', () => {
+    it('should call registered listener when displayUri event fires', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
 
-    it('should return SDK status after init', async () => {
-      await MetaMaskSdkClient.init(mockConfig);
-      expect(MetaMaskSdkClient.getStatus()).toBe('connected');
-    });
-  });
-
-  describe('getAccounts', () => {
-    it('should return empty array if not initialized', () => {
-      expect(MetaMaskSdkClient.getAccounts()).toEqual([]);
-    });
-
-    it('should return SDK accounts after init', async () => {
-      await MetaMaskSdkClient.init(mockConfig);
-      expect(MetaMaskSdkClient.getAccounts()).toEqual([
-        '0x1234567890abcdef1234567890abcdef12345678',
-      ]);
-    });
-
-    it('should fall back to cached accounts if SDK accounts is empty', async () => {
       await MetaMaskSdkClient.init(mockConfig);
 
-      // Simulate SDK accounts being cleared but cache still has them
-      mockSdk.accounts = [];
-      MetaMaskSdkClient.setCachedAccounts(['0xcached']);
+      const listener = jest.fn();
+      MetaMaskSdkClient.onDisplayUri(listener);
 
-      expect(MetaMaskSdkClient.getAccounts()).toEqual(['0xcached']);
+      capturedEventHandlers.displayUri('wc:test-uri');
+      expect(listener).toHaveBeenCalledWith('wc:test-uri');
+    });
+
+    it('should support multiple listeners', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      const listener1 = jest.fn();
+      const listener2 = jest.fn();
+      MetaMaskSdkClient.onDisplayUri(listener1);
+      MetaMaskSdkClient.onDisplayUri(listener2);
+
+      capturedEventHandlers.displayUri('wc:test-uri');
+      expect(listener1).toHaveBeenCalledWith('wc:test-uri');
+      expect(listener2).toHaveBeenCalledWith('wc:test-uri');
+    });
+
+    it('should return unsubscribe function', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      const listener = jest.fn();
+      const unsubscribe = MetaMaskSdkClient.onDisplayUri(listener);
+
+      unsubscribe();
+
+      capturedEventHandlers.displayUri('wc:test-uri');
+      expect(listener).not.toHaveBeenCalled();
     });
   });
 
   describe('connect', () => {
-    it('should call SDK connect when not already connected', async () => {
-      const noSessionMock = {
-        ...mockSdk,
-        accounts: [],
-        selectedAccount: undefined,
-        selectedChainId: undefined,
-        connect: jest
-          .fn()
-          .mockResolvedValue({ accounts: ['0x123'], chainId: '0x1' }),
-      };
-      mockCreateEVMClient.mockResolvedValue(noSessionMock);
+    it('should return existing session if already connected', async () => {
       await MetaMaskSdkClient.init(mockConfig);
 
-      await MetaMaskSdkClient.connect([1, 137]);
-
-      expect(noSessionMock.connect).toHaveBeenCalledWith({
-        chainIds: ['0x1', '0x89'],
-      });
-    });
-
-    it('should return cached session if already connected', async () => {
-      // mockSdk starts with accounts/selectedAccount/selectedChainId already set
-      mockSdk.connect.mockResolvedValue({
-        accounts: ['0xnew'],
-        chainId: '0x89',
-      });
-      await MetaMaskSdkClient.init(mockConfig);
-
-      // Cache was populated during init
       const result = await MetaMaskSdkClient.connect([1, 137]);
 
-      // Should return cached session without calling sdk.connect
       expect(mockSdk.connect).not.toHaveBeenCalled();
       expect(result.accounts).toContain(
         '0x1234567890abcdef1234567890abcdef12345678',
@@ -337,17 +251,31 @@ describe('MetaMaskSdkClient', () => {
       expect(result.chainId).toBe('0x1');
     });
 
+    it('should call SDK connect when not already connected', async () => {
+      mockSdk.accounts = [];
+      mockSdk.selectedAccount = undefined;
+      mockSdk.selectedChainId = undefined;
+      mockSdk.connect.mockResolvedValue({
+        accounts: ['0x123'],
+        chainId: '0x1',
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+      await MetaMaskSdkClient.connect([1, 137]);
+
+      expect(mockSdk.connect).toHaveBeenCalledWith({
+        chainIds: ['0x1', '0x89'],
+      });
+    });
+
     it('should deduplicate concurrent connect calls', async () => {
-      const noSessionMock = {
-        ...mockSdk,
-        accounts: [],
-        selectedAccount: undefined,
-        selectedChainId: undefined,
-        connect: jest
-          .fn()
-          .mockResolvedValue({ accounts: ['0x123'], chainId: '0x1' }),
-      };
-      mockCreateEVMClient.mockResolvedValue(noSessionMock);
+      mockSdk.accounts = [];
+      mockSdk.selectedChainId = undefined;
+      mockSdk.connect.mockResolvedValue({
+        accounts: ['0x123'],
+        chainId: '0x1',
+      });
+
       await MetaMaskSdkClient.init(mockConfig);
 
       const [result1, result2] = await Promise.all([
@@ -355,7 +283,7 @@ describe('MetaMaskSdkClient', () => {
         MetaMaskSdkClient.connect([1]),
       ]);
 
-      expect(noSessionMock.connect).toHaveBeenCalledTimes(1);
+      expect(mockSdk.connect).toHaveBeenCalledTimes(1);
       expect(result1).toEqual(result2);
     });
   });
@@ -365,30 +293,30 @@ describe('MetaMaskSdkClient', () => {
       await expect(MetaMaskSdkClient.disconnect()).resolves.not.toThrow();
     });
 
-    it('should call SDK disconnect and clear state but keep instance alive', async () => {
+    it('should call SDK disconnect', async () => {
       await MetaMaskSdkClient.init(mockConfig);
+      await MetaMaskSdkClient.disconnect();
+      expect(mockSdk.disconnect).toHaveBeenCalled();
+    });
 
-      MetaMaskSdkClient.setCachedAccounts(['0x123']);
-
-      mockSdk.disconnect.mockImplementation(() => {
-        mockSdk.accounts = [];
-        mockSdk.selectedAccount = undefined;
-        mockSdk.selectedChainId = undefined;
-        return Promise.resolve();
-      });
-
+    it('should keep instance alive after disconnect', async () => {
+      await MetaMaskSdkClient.init(mockConfig);
       await MetaMaskSdkClient.disconnect();
 
-      expect(mockSdk.disconnect).toHaveBeenCalled();
-      expect(MetaMaskSdkClient.getAccounts()).toEqual([]);
-      expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
       expect(MetaMaskSdkClient.isInitialized).toBe(true);
       expect(() => MetaMaskSdkClient.getInstance()).not.toThrow();
+    });
+
+    it('should swallow disconnect errors', async () => {
+      await MetaMaskSdkClient.init(mockConfig);
+      mockSdk.disconnect.mockRejectedValue(new Error('disconnect failed'));
+
+      await expect(MetaMaskSdkClient.disconnect()).resolves.not.toThrow();
     });
   });
 
   describe('switchChain', () => {
-    it('should call SDK switchChain', async () => {
+    it('should call SDK switchChain with hex chain ID', async () => {
       await MetaMaskSdkClient.init(mockConfig);
       await MetaMaskSdkClient.switchChain(137);
 
@@ -416,48 +344,18 @@ describe('MetaMaskSdkClient', () => {
   });
 
   describe('reset', () => {
-    it('should reset all static properties', async () => {
+    it('should reset all state', async () => {
       await MetaMaskSdkClient.init(mockConfig);
-      MetaMaskSdkClient.setCachedAccounts(['0x123']);
       expect(MetaMaskSdkClient.isInitialized).toBe(true);
 
       MetaMaskSdkClient.reset();
 
       expect(MetaMaskSdkClient.isInitialized).toBe(false);
-      expect(MetaMaskSdkClient.getAccounts()).toEqual([]);
-      expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
-    });
-  });
-
-  describe('cache management', () => {
-    it('should update cached accounts and return them when SDK accounts empty', async () => {
-      // Init SDK with empty accounts
-      mockSdk.accounts = [];
-      await MetaMaskSdkClient.init(mockConfig);
-
-      // Set cached accounts
-      MetaMaskSdkClient.setCachedAccounts(['0x123', '0x456']);
-
-      // Should return cached accounts since SDK accounts is empty
-      expect(MetaMaskSdkClient.getAccounts()).toEqual(['0x123', '0x456']);
+      expect(() => MetaMaskSdkClient.getInstance()).toThrow();
+      expect(MetaMaskSdkClient.getProvider()).toBeUndefined();
     });
 
-    it('should update cached chain ID and return when SDK chain ID missing', async () => {
-      // Init SDK with no chain ID
-      mockSdk.selectedChainId = undefined;
-      await MetaMaskSdkClient.init(mockConfig);
-
-      // Set cached chain ID
-      MetaMaskSdkClient.setCachedSelectedChainId('0x89');
-
-      // Should return cached chain ID since SDK selectedChainId is undefined
-      expect(MetaMaskSdkClient.getSelectedChainId()).toBe('0x89');
-    });
-  });
-
-  describe('displayUri callbacks', () => {
-    it('should call pending callback on displayUri event', async () => {
-      const callback = jest.fn();
+    it('should clear displayUri listeners', async () => {
       let capturedEventHandlers: any;
       mockCreateEVMClient.mockImplementation((options) => {
         capturedEventHandlers = options.eventHandlers;
@@ -466,29 +364,14 @@ describe('MetaMaskSdkClient', () => {
 
       await MetaMaskSdkClient.init(mockConfig);
 
-      MetaMaskSdkClient.setOnDisplayUriCallback(callback);
-      capturedEventHandlers.displayUri('wc:test-uri');
+      const listener = jest.fn();
+      MetaMaskSdkClient.onDisplayUri(listener);
+      MetaMaskSdkClient.reset();
 
-      expect(callback).toHaveBeenCalledWith('wc:test-uri');
-    });
-
-    it('should clear callback after use', async () => {
-      const callback = jest.fn();
-      let capturedEventHandlers: any;
-      mockCreateEVMClient.mockImplementation((options) => {
-        capturedEventHandlers = options.eventHandlers;
-        return Promise.resolve(mockSdk);
-      });
-
+      // Re-init to get new event handlers
       await MetaMaskSdkClient.init(mockConfig);
-
-      MetaMaskSdkClient.setOnDisplayUriCallback(callback);
       capturedEventHandlers.displayUri('wc:test-uri');
-
-      // Second event should not call the callback
-      callback.mockClear();
-      capturedEventHandlers.displayUri('wc:test-uri-2');
-      expect(callback).not.toHaveBeenCalled();
+      expect(listener).not.toHaveBeenCalled();
     });
   });
 });
