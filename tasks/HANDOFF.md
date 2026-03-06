@@ -31,7 +31,7 @@ Two new packages:
  Solana session recovery (page refresh)      yes         yes
  Multichain (EVM + Solana side by side)      yes         yes
 
- * Requires latest MetaMask mobile dev build (production fix pending)
+ * Requires latest MetaMask mobile dev build (see "Mobile dev build" below)
  ** Known issue, see "Blockers" below
 ```
 
@@ -94,6 +94,30 @@ packages/@dynamic-labs-connectors/metamask-solana/src/
 
 playground/                      - Next.js app for manual testing
 ```
+
+## Mobile dev build requirement
+
+Testing Solana flows (especially signMessage rejection and QR code) requires a
+**recent MetaMask mobile dev build** from the `main` branch. The latest stable
+release (v7.67.2 as of 2026-03-06) does NOT include the necessary fixes. Key
+commits that landed on `main` after v7.67.2:
+
+| Commit | PR | What it fixes |
+|--------|-----|---------------|
+| `ab15f172` | [#26972](https://github.com/MetaMask/metamask-mobile/pull/26972) | **Solana signMessage rejection toast.** Previously, rejecting a Solana signMessage showed "Failed to establish connection" instead of "Approval rejected". Adds proper 3-tier error categorization for SDKConnectV2 RPC responses. Also works around a bug in `@metamask/eth-snap-keyring` where rejection code `4001` gets discarded and re-thrown as `-32603`. |
+| `ca668952` | [#26648](https://github.com/MetaMask/metamask-mobile/pull/26648) | **Robust deeplink parsing.** Makes MetaMask Connect deeplink parsing more resilient, fixing edge cases in the QR code flow. |
+
+These fixes are also complemented by connect-monorepo side fixes:
+
+| Commit | PR | What it fixes |
+|--------|-----|---------------|
+| `4af5513` | [#189](https://github.com/MetaMask/connect-monorepo/pull/189) | **Solana rejection error codes.** `parseWalletError` threw an uncaught exception when the wallet returned error codes outside the EIP-1193 provider range (like `-32603`). This prevented Solana request rejections from being handled gracefully. |
+| `e9e2ade` | [#191](https://github.com/MetaMask/connect-monorepo/pull/191) | **Log redaction.** Removes sensitive data from SDK transport logs. |
+
+**How to get a dev build:**
+- Android: download the latest `.apk` from the [Runway public bucket](https://github.com/MetaMask/metamask-mobile#download-and-install-the-development-build)
+- iOS: requires device registration with MetaMask's Apple developer account, then download `.ipa` from Runway bucket
+- Once these fixes ship in a stable mobile release, dev builds are no longer needed
 
 ## Blockers before release
 
@@ -177,7 +201,11 @@ npm run dev
 ```
 
 The playground uses Dynamic SDK with both MetaMask EVM and Solana connectors.
-For QR code testing, use MetaMask mobile (latest dev build for Solana signing).
+
+**Important:** For QR code / mobile testing, you MUST use a MetaMask mobile dev
+build from `main` (not the stable App Store / Play Store release). See "Mobile
+dev build requirement" above for the specific fixes needed and how to get a dev
+build. Extension-based testing works with any current MetaMask extension version.
 
 ## Test matrix for final verification
 
