@@ -19,7 +19,6 @@ export interface MetaMaskSolanaSdkClientConfig {
  */
 export class MetaMaskSolanaSdkClient {
   private static wallet: StandardWallet | null = null;
-  private static disconnectFn: (() => Promise<void>) | null = null;
   private static multichainCore: MultichainCore | null = null;
   private static initPromise: Promise<void> | null = null;
 
@@ -70,7 +69,6 @@ export class MetaMaskSolanaSdkClient {
 
       const wallet = client.getWallet() as unknown as StandardWallet;
       MetaMaskSolanaSdkClient.wallet = wallet;
-      MetaMaskSolanaSdkClient.disconnectFn = client.disconnect;
       MetaMaskSolanaSdkClient.multichainCore =
         client.core as unknown as MultichainCore;
       MetaMaskSolanaSdkClient.isInitialized = true;
@@ -150,21 +148,39 @@ export class MetaMaskSolanaSdkClient {
     return firstAccount?.address;
   };
 
+  /**
+   * Scoped disconnect via wallet-standard's standard:disconnect.
+   *
+   * client.disconnect() (v0.2.0) tears down the shared multichain
+   * transport, breaking reconnection for both EVM and Solana.
+   * standard:disconnect clears only the wallet session, preserving
+   * the transport for extension-based reconnection.
+   *
+   * Known limitation: QR code reconnection after disconnect does not
+   * work with this approach. Upstream fix (connect-monorepo PR #193)
+   * adds core.disconnect(solanaScopes) which properly resets the
+   * transport session for Solana only. Once @metamask/connect-solana
+   * publishes a version including that fix, switch to client.disconnect().
+   */
   static disconnect = async (): Promise<void> => {
-    if (!MetaMaskSolanaSdkClient.disconnectFn) {
-      return;
-    }
+    const wallet = MetaMaskSolanaSdkClient.wallet;
+    if (!wallet) return;
+
+    const disconnectFn = wallet.features['standard:disconnect']?.[
+      'disconnect'
+    ] as (() => Promise<void>) | undefined;
+
+    if (!disconnectFn) return;
 
     try {
-      await MetaMaskSolanaSdkClient.disconnectFn();
-    } catch (error) {
-      logger.warn('[MetaMaskSolanaSdkClient] disconnect error (ignored)', error);
+      await disconnectFn();
+    } catch {
+      // Ignore disconnect errors
     }
   };
 
   static reset = (): void => {
     MetaMaskSolanaSdkClient.wallet = null;
-    MetaMaskSolanaSdkClient.disconnectFn = null;
     MetaMaskSolanaSdkClient.multichainCore = null;
     MetaMaskSolanaSdkClient.isInitialized = false;
     MetaMaskSolanaSdkClient.initPromise = null;
