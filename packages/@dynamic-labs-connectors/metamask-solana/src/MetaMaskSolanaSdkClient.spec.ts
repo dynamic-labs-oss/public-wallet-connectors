@@ -1,7 +1,7 @@
 import { MetaMaskSolanaSdkClient } from './MetaMaskSolanaSdkClient.js';
 
 const mockConnect = jest.fn();
-const mockWalletDisconnect = jest.fn();
+const mockClientDisconnect = jest.fn();
 const mockGetWallet = jest.fn();
 const mockMergeOptions = jest.fn();
 const mockCore = {
@@ -14,6 +14,7 @@ jest.mock('@metamask/connect-solana', () => ({
   createSolanaClient: jest.fn().mockImplementation(async () => ({
     getWallet: mockGetWallet,
     core: mockCore,
+    disconnect: mockClientDisconnect,
   })),
 }));
 
@@ -55,7 +56,7 @@ describe('MetaMaskSolanaSdkClient', () => {
     mockConnect.mockResolvedValue({
       accounts: [{ address: 'SoLaNa1234' }],
     });
-    mockWalletDisconnect.mockResolvedValue(undefined);
+    mockClientDisconnect.mockResolvedValue(undefined);
   });
 
   describe('constructor', () => {
@@ -157,10 +158,10 @@ describe('MetaMaskSolanaSdkClient', () => {
       ).resolves.not.toThrow();
     });
 
-    it('should call wallet standard:disconnect (scoped)', async () => {
+    it('should call client.disconnect()', async () => {
       await MetaMaskSolanaSdkClient.init({});
       await MetaMaskSolanaSdkClient.disconnect();
-      expect(mockWalletDisconnect).toHaveBeenCalled();
+      expect(mockClientDisconnect).toHaveBeenCalled();
     });
   });
 

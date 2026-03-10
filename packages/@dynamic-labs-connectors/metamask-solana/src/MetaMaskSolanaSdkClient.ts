@@ -8,6 +8,12 @@ type MultichainCore = {
   mergeOptions(partial: { ui?: { headless?: boolean } }): void;
 };
 
+type SolanaClient = {
+  getWallet: () => unknown;
+  core: MultichainCore;
+  disconnect: () => Promise<void>;
+};
+
 export interface MetaMaskSolanaSdkClientConfig {
   dappName?: string;
   dappUrl?: string;
@@ -18,6 +24,7 @@ export interface MetaMaskSolanaSdkClientConfig {
  * Wraps createSolanaClient() and exposes the wallet-standard Wallet.
  */
 export class MetaMaskSolanaSdkClient {
+  private static client: SolanaClient | null = null;
   private static wallet: StandardWallet | null = null;
   private static multichainCore: MultichainCore | null = null;
   private static initPromise: Promise<void> | null = null;
@@ -68,6 +75,7 @@ export class MetaMaskSolanaSdkClient {
       });
 
       const wallet = client.getWallet() as unknown as StandardWallet;
+      MetaMaskSolanaSdkClient.client = client as SolanaClient;
       MetaMaskSolanaSdkClient.wallet = wallet;
       MetaMaskSolanaSdkClient.multichainCore =
         client.core as unknown as MultichainCore;
@@ -148,38 +156,19 @@ export class MetaMaskSolanaSdkClient {
     return firstAccount?.address;
   };
 
-  /**
-   * Scoped disconnect via wallet-standard's standard:disconnect.
-   *
-   * client.disconnect() (v0.2.0) tears down the shared multichain
-   * transport, breaking reconnection for both EVM and Solana.
-   * standard:disconnect clears only the wallet session, preserving
-   * the transport for extension-based reconnection.
-   *
-   * Known limitation: QR code reconnection after disconnect does not
-   * work with this approach. Upstream fix (connect-monorepo PR #193)
-   * adds core.disconnect(solanaScopes) which properly resets the
-   * transport session for Solana only. Once @metamask/connect-solana
-   * publishes a version including that fix, switch to client.disconnect().
-   */
   static disconnect = async (): Promise<void> => {
-    const wallet = MetaMaskSolanaSdkClient.wallet;
-    if (!wallet) return;
-
-    const disconnectFn = wallet.features['standard:disconnect']?.[
-      'disconnect'
-    ] as (() => Promise<void>) | undefined;
-
-    if (!disconnectFn) return;
+    const client = MetaMaskSolanaSdkClient.client;
+    if (!client) return;
 
     try {
-      await disconnectFn();
+      await client.disconnect();
     } catch {
       // Ignore disconnect errors
     }
   };
 
   static reset = (): void => {
+    MetaMaskSolanaSdkClient.client = null;
     MetaMaskSolanaSdkClient.wallet = null;
     MetaMaskSolanaSdkClient.multichainCore = null;
     MetaMaskSolanaSdkClient.isInitialized = false;
