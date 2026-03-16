@@ -16,7 +16,7 @@
     }
   },
   "dependencies": {
-    "@metamask/connect-evm": "^0.5.0"
+    "@metamask/connect-evm": "^0.8.0"
   },
   "peerDependencies": {
     "@dynamic-labs/ethereum-core": ">=4.31.2",

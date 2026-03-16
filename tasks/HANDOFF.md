@@ -8,7 +8,7 @@
 ## What this is
 
 MetaMask wallet connectors for Dynamic using the new MetaMask Connect SDKs
-(`@metamask/connect-evm@0.5.0` and `@metamask/connect-solana@0.2.0`). These
+(`@metamask/connect-evm@0.8.0` and `@metamask/connect-solana@0.6.0`). These
 replace the legacy `@metamask/sdk` with the multichain-capable Connect
 architecture.
 
@@ -226,8 +226,8 @@ build. Extension-based testing works with any current MetaMask extension version
 
 | Package                      | Version | Notes                               |
 |------------------------------|---------|-------------------------------------|
-| `@metamask/connect-evm`     | ^0.5.0  | Stable                              |
-| `@metamask/connect-solana`  | ^0.2.0  | Needs upgrade once PR #193 ships    |
+| `@metamask/connect-evm`     | ^0.8.0  | Stable                              |
+| `@metamask/connect-solana`  | ^0.6.0  | Stable                              |
 | `@solana/web3.js`           | ^1.x    | For PublicKey, Transaction types     |
 | `bs58`                       | ^6.0.0  | Solana signature encoding           |
 
