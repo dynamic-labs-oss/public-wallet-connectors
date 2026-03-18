@@ -29,6 +29,7 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
 
   override name = 'MetaMask';
   override canConnectViaQrCode = true;
+  override canHandleMultipleConnections = false;
 
   constructor(props: SolanaWalletConnectorOpts) {
     super({

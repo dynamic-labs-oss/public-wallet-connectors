@@ -20,6 +20,7 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
 
   override name = 'MetaMask';
   override canConnectViaQrCode = true;
+  override canHandleMultipleConnections = false;
 
   constructor(props: EthereumWalletConnectorOpts) {
     super({
