@@ -21,15 +21,18 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   override name = 'MetaMask';
   override canConnectViaQrCode = true;
   override canHandleMultipleConnections = false;
+  override isWalletConnect = true;
 
   constructor(props: EthereumWalletConnectorOpts) {
     super({
       ...props,
+      // This should be removable according to Carla.
       metadata: {
-        id: 'metamask',
+        id: 'metamaskevm',
         name: 'MetaMask',
         icon: 'https://iconic.dynamic-static-assets.com/icons/sprite.svg#metamask',
         rdns: 'io.metamask',
+        groupKey: 'metamask',
       },
     });
   }
@@ -108,7 +111,10 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
    */
   override findProvider(): IEthereum | undefined {
     const provider = MetaMaskSdkClient.getProvider();
-    if (!provider) return undefined;
+    // The new SDK always has a EIP-1193 provider available even if there is no established connection.
+    // If Dynamic assumes that a provider can only be available if there is an established connection,
+    // then this check is needed. If wrong, then this check can be removed.
+    if (!provider?.selectedAccount) return undefined;
 
     return {
       ...provider,
@@ -136,11 +142,19 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       await this.init();
     }
 
-    try {
-      const sdk = MetaMaskSdkClient.getInstance();
-      if (sdk.selectedAccount) return sdk.selectedAccount;
-    } catch {
-      // SDK not initialized
+    // Not sure if this is needed. Was added in an attempt to fix the personal sign / linking account issues.
+    // I believe if getAddress() is called without onDisplayUri, the intention is that want to return the existing selected account if
+    // there is one. If onDisplayUri is provided, we don't want to return the existing selected account if there is one, instead we want to
+    // cause a connection prompt to be shown to the user so that they can establish a new connection.
+    // Delete this block if this assumption is incorrect. I don't have a strong thoughts on this, simply leaving it here since it was here while,
+    // we were debugging with Carla.
+    if (!opts?.onDisplayUri) {
+      try {
+        const sdk = MetaMaskSdkClient.getInstance();
+        if (sdk.selectedAccount) return sdk.selectedAccount;
+      } catch {
+        // SDK not initialized
+      }
     }
 
     const unsubscribe = opts?.onDisplayUri
@@ -148,6 +162,13 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       : undefined;
 
     try {
+      // Not sure if this is needed. Was added in an attempt to fix the personal sign / linking account issues.
+      // If onDisplayUri is provided, then I assume we want to cause a connection prompt to be shown to the user. Explicitly disconnecting would guarantee
+      // that a new connection prompt is shown to the user, but that isn't strictly required.
+      // Delete this block if the above block that returns the selectedAccount early is not needed.
+      if (opts?.onDisplayUri) {
+        await MetaMaskSdkClient.disconnect();
+      }
       const chainIds = this.evmNetworks.map((n) =>
         toNumericChainId(n.chainId),
       );
