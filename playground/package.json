@@ -10,12 +10,12 @@
     "sync": "cd ../tmp/sdk-tools && ./sync-all.sh"
   },
   "dependencies": {
-    "@dynamic-labs/ethereum": "^4.56.0",
-    "@dynamic-labs/ethereum-core": "^4.56.0",
-    "@dynamic-labs/sdk-react-core": "^4.56.0",
-    "@dynamic-labs/solana": "^4.58.1",
-    "@dynamic-labs/solana-core": "^4.31.2",
-    "@dynamic-labs/wallet-connector-core": "^4.56.0",
+    "@dynamic-labs/ethereum": "^4.77.1",
+    "@dynamic-labs/ethereum-core": "^4.77.1",
+    "@dynamic-labs/sdk-react-core": "^4.77.1",
+    "@dynamic-labs/solana": "^4.77.1",
+    "@dynamic-labs/solana-core": "^4.77.1",
+    "@dynamic-labs/wallet-connector-core": "^4.77.1",
     "@metamask/connect-evm": "^0.8.0",
     "@metamask/connect-solana": "^0.6.0",
     "@metamask/rpc-errors": "^7.0.3",
