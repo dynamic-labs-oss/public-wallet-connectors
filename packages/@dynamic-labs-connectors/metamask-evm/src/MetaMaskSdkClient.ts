@@ -64,6 +64,7 @@ export class MetaMaskSdkClient {
         name: config.dappName ?? 'Dynamic',
         url: config.dappUrl ?? window.location.origin,
       },
+      analytics: { integrationType: 'dynamic' },
       api: {
         supportedNetworks: supportedNetworks as Record<HexChainId, string>,
       },
