@@ -71,6 +71,9 @@ export class MetaMaskSolanaSdkClient {
           name: config.dappName ?? 'Dynamic',
           url: config.dappUrl ?? window.location.origin,
         },
+        analytics: {
+          integrationType: 'dynamic',
+        },
         skipAutoRegister: false,
       });
 
