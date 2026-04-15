@@ -47,7 +47,7 @@ runs:
         fetch-depth: 0
         path: ${{ github.workspace }}
     - name: Setup Node
-      uses: dynamic-labs/sdk/.github/actions/setup-node@main
+      uses: dynamic-labs-oss/public-wallet-connectors/.github/actions/setup-node@main
       with:
         version: ${{ inputs.version }}
     - name: Install Packages for Github Action
