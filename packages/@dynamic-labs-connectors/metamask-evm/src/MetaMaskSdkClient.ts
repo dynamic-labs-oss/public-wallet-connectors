@@ -27,6 +27,7 @@ export class MetaMaskSdkClient {
     chainId: string;
   }> | null = null;
   private static displayUriListeners = new Set<(uri: string) => void>();
+  private static latestDisplayUri: string | null = null;
 
   static isInitialized = false;
 
@@ -71,6 +72,7 @@ export class MetaMaskSdkClient {
       ui: { headless: true, preferExtension: true },
       eventHandlers: {
         displayUri: (uri: string) => {
+          MetaMaskSdkClient.latestDisplayUri = uri;
           for (const listener of MetaMaskSdkClient.displayUriListeners) {
             listener(uri);
           }
@@ -97,6 +99,10 @@ export class MetaMaskSdkClient {
     | ReturnType<MetamaskConnectEVM['getProvider']>
     | undefined => {
     return MetaMaskSdkClient.instance?.getProvider();
+  };
+
+  static getDisplayUri = (): string | undefined => {
+    return MetaMaskSdkClient.latestDisplayUri ?? undefined;
   };
 
   /** Subscribe to display_uri events. Returns an unsubscribe function. */
@@ -171,5 +177,6 @@ export class MetaMaskSdkClient {
     MetaMaskSdkClient.initPromise = null;
     MetaMaskSdkClient.connectPromise = null;
     MetaMaskSdkClient.displayUriListeners.clear();
+    MetaMaskSdkClient.latestDisplayUri = null;
   };
 }

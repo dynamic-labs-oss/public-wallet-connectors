@@ -180,6 +180,10 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     await MetaMaskSdkClient.disconnect();
   }
 
+  public getConnectionUri(): string | undefined {
+    return MetaMaskSdkClient.getDisplayUri();
+  }
+
   async getSupportedNetworks(): Promise<string[]> {
     return this.evmNetworks.map((n) => String(toNumericChainId(n.chainId)));
   }
