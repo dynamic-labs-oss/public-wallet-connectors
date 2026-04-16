@@ -35,9 +35,10 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
     super({
       ...props,
       metadata: {
-        id: 'metamask-solana',
+        id: 'metamasksol',
         name: 'MetaMask',
         icon: 'https://iconic.dynamic-static-assets.com/icons/sprite.svg#metamask',
+        groupKey: 'metamask',
       },
     });
   }
