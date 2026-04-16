@@ -19,22 +19,9 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   private autoConnectEmitted = false;
 
   override name = 'MetaMask';
+  override overrideKey = 'metamask';
   override canConnectViaQrCode = true;
   override canHandleMultipleConnections = false;
-
-  constructor(props: EthereumWalletConnectorOpts) {
-    super({
-      ...props,
-      // This should be removable according to Carla.
-      metadata: {
-        id: 'metamaskevm',
-        name: 'MetaMask',
-        icon: 'https://iconic.dynamic-static-assets.com/icons/sprite.svg#metamask',
-        rdns: 'io.metamask',
-        groupKey: 'metamask',
-      },
-    });
-  }
 
   /**
    * Returns true only when a real MetaMask injected provider is present.
