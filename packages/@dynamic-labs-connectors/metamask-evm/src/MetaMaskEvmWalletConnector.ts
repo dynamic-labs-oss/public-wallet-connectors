@@ -27,31 +27,13 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
    * Returns true only when a real MetaMask injected provider is present.
    * Dynamic uses this to decide between "install extension" and QR code views.
    */
-  override isInstalledOnBrowser(): boolean {
-    try {
-      const helper = (
-        this as unknown as {
-          ethProviderHelper?: {
-            eip6963ProviderLookup?: (rdns: string) => unknown;
-          };
-        }
-      ).ethProviderHelper;
-      if (helper?.eip6963ProviderLookup?.('io.metamask')) return true;
-    } catch {
-      // fallback below
-    }
+  override isInstalledOnBrowser() {
+    const metaMaskEip6963Provider =
+      this.ethProviderHelper?.eip6963ProviderLookup(this.rdns);
 
-    if (typeof window === 'undefined') return false;
-    const eth = (window as unknown as { ethereum?: unknown }).ethereum as
-      | { isMetaMask?: boolean; providers?: unknown[] }
-      | undefined;
-    if (!eth) return false;
-    if (Array.isArray(eth.providers)) {
-      return eth.providers.some((p) =>
-        Boolean((p as { isMetaMask?: boolean } | undefined)?.isMetaMask),
-      );
-    }
-    return Boolean(eth.isMetaMask);
+    const isInstalled = Boolean(metaMaskEip6963Provider);
+
+    return isInstalled;
   }
 
   override async init(): Promise<void> {
