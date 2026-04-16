@@ -2,7 +2,6 @@ import {
   logger,
   type GetAddressOpts,
 } from '@dynamic-labs/wallet-connector-core';
-import { type EthereumWalletConnectorOpts } from '@dynamic-labs/ethereum-core';
 import {
   EthereumInjectedConnector,
   type IEthereum,
@@ -29,7 +28,7 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
    */
   override isInstalledOnBrowser() {
     const metaMaskEip6963Provider =
-      this.ethProviderHelper?.eip6963ProviderLookup(this.rdns);
+      this.ethProviderHelper?.eip6963ProviderLookup(this.metadata.rdns!);
 
     const isInstalled = Boolean(metaMaskEip6963Provider);
 
