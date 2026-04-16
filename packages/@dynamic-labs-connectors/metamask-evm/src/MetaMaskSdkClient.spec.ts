@@ -97,6 +97,7 @@ describe('MetaMaskSdkClient', () => {
       expect(mockCreateEVMClient).toHaveBeenCalledWith(
         expect.objectContaining({
           dapp: { name: 'Test DApp', url: 'https://test.com' },
+          analytics: { integrationType: 'dynamic' },
           api: {
             supportedNetworks: {
               '0x1': 'https://eth.rpc',
@@ -235,6 +236,96 @@ describe('MetaMaskSdkClient', () => {
 
       capturedEventHandlers.displayUri('wc:test-uri');
       expect(listener).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getDisplayUri', () => {
+    it('should return undefined when no URI has been emitted', () => {
+      expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
+    });
+
+    it('should return the latest URI after a displayUri event', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('wc:some-uri');
+      expect(MetaMaskSdkClient.getDisplayUri()).toBe('wc:some-uri');
+    });
+
+    it('should be cleared when connect event fires', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('wc:some-uri');
+      expect(MetaMaskSdkClient.getDisplayUri()).toBe('wc:some-uri');
+
+      capturedEventHandlers.connect();
+      expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
+    });
+
+    it('should be cleared when disconnect event fires', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('wc:some-uri');
+      expect(MetaMaskSdkClient.getDisplayUri()).toBe('wc:some-uri');
+
+      capturedEventHandlers.disconnect();
+      expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
+    });
+
+    it('should be cleared after connect() resolves', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      mockSdk.accounts = [];
+      mockSdk.selectedChainId = undefined;
+      mockSdk.connect.mockResolvedValue({
+        accounts: ['0x123'],
+        chainId: '0x1',
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('wc:some-uri');
+      expect(MetaMaskSdkClient.getDisplayUri()).toBe('wc:some-uri');
+
+      await MetaMaskSdkClient.connect([1]);
+      expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
+    });
+
+    it('should be cleared after reset()', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('wc:some-uri');
+      expect(MetaMaskSdkClient.getDisplayUri()).toBe('wc:some-uri');
+
+      MetaMaskSdkClient.reset();
+      expect(MetaMaskSdkClient.getDisplayUri()).toBeUndefined();
     });
   });
 

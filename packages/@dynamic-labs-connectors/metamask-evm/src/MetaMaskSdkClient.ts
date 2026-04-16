@@ -77,6 +77,12 @@ export class MetaMaskSdkClient {
             listener(uri);
           }
         },
+        connect: () => {
+          MetaMaskSdkClient.latestDisplayUri = null;
+        },
+        disconnect: () => {
+          MetaMaskSdkClient.latestDisplayUri = null;
+        },
       },
       debug: false,
     });
@@ -140,6 +146,7 @@ export class MetaMaskSdkClient {
         chainId: result.chainId as string,
       }))
       .finally(() => {
+        MetaMaskSdkClient.latestDisplayUri = null;
         MetaMaskSdkClient.connectPromise = null;
       });
 
