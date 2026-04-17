@@ -263,8 +263,8 @@ importers:
         specifier: '>=4.31.2'
         version: 4.37.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@metamask/connect-evm':
-        specifier: ^0.8.0
-        version: 0.8.0(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^0.11.1
+        version: 0.11.1(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
 
   packages/@dynamic-labs-connectors/safe-evm:
     dependencies:
@@ -1972,15 +1972,18 @@ packages:
     resolution: {integrity: sha512-807Y6JxqeY3tckSRDse96RmHV6atDsSPLD/x9KIync8ccFjOwSZlv0n4NA5Bsi0znjOogU0jEe5hPNIDTFzFRg==}
     engines: {node: ^18.18 || >=20}
 
-  '@metamask/connect-evm@0.8.0':
-    resolution: {integrity: sha512-pGBAXWvpCwyAhAy9eROeNJh299MdnKWMeknVQ63VouU8HrZEOLd8P+Lqk0zqdP2YB15NI7FLnTw4AHvHe8sTCg==}
+  '@metamask/connect-evm@0.11.1':
+    resolution: {integrity: sha512-LAGmma9W7Y2eP3X2GHQeor6VxSWEx8TXPCDG0/eiGTokgEiXSN2R0PbIgjPtfK0gfG+NFXVEpbzGb3HE9x+Bsw==}
     engines: {node: '>=20.19.0'}
 
-  '@metamask/connect-multichain@0.10.0':
-    resolution: {integrity: sha512-3n6MyNoY0J3gzdS846mIkpfawwP4eXF3BXwsYy/VA/lG4psJaTTblxVgp9DAivnkfxUE/SL1qTZh5j6SHDcZSQ==}
+  '@metamask/connect-multichain@0.12.0':
+    resolution: {integrity: sha512-gkVeVuS/jdh/nGseAvf8IF+LgarrjLNm7lNAcA7F4OExDKUUwL007Cm2r+DNIY747vPVY1QunzcFaSSiPsledA==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@react-native-async-storage/async-storage': ^1.23
+    peerDependenciesMeta:
+      '@react-native-async-storage/async-storage':
+        optional: true
 
   '@metamask/controller-utils@11.18.0':
     resolution: {integrity: sha512-V2BSgcG0nzHqqh53hL613XB+8K7ON3tmSWXAWZC/HUQ+X6SW6D3Z9qO3WNN1slUhGI2C+PhTrvnMzLyoGgv9ew==}
@@ -10669,11 +10672,11 @@ snapshots:
       - '@babel/runtime'
       - supports-color
 
-  '@metamask/connect-evm@0.8.0(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+  '@metamask/connect-evm@0.11.1(@babel/runtime@7.28.4)(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       '@metamask/analytics': 0.4.0
       '@metamask/chain-agnostic-permission': 1.4.0(@babel/runtime@7.28.4)
-      '@metamask/connect-multichain': 0.10.0(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@metamask/connect-multichain': 0.12.0(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@metamask/utils': 11.9.0
     transitivePeerDependencies:
       - '@babel/runtime'
@@ -10683,7 +10686,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@metamask/connect-multichain@0.10.0(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+  '@metamask/connect-multichain@0.12.0(@react-native-async-storage/async-storage@1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       '@metamask/analytics': 0.4.0
       '@metamask/mobile-wallet-protocol-core': 0.4.0
@@ -10694,7 +10697,6 @@ snapshots:
       '@metamask/rpc-errors': 7.0.3
       '@metamask/utils': 11.9.0
       '@paulmillr/qr': 0.2.1
-      '@react-native-async-storage/async-storage': 1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10))
       bowser: 2.12.1
       buffer: 6.0.3
       cross-fetch: 4.1.0
@@ -10703,6 +10705,8 @@ snapshots:
       pako: 2.1.0
       uuid: 11.1.0
       ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+    optionalDependencies:
+      '@react-native-async-storage/async-storage': 1.24.0(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10))
     transitivePeerDependencies:
       - bufferutil
       - encoding
@@ -11551,6 +11555,7 @@ snapshots:
     dependencies:
       merge-options: 3.0.4
       react-native: 0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10)
+    optional: true
 
   '@react-native/assets-registry@0.82.0': {}
 
@@ -16181,7 +16186,8 @@ snapshots:
 
   is-plain-obj@1.1.0: {}
 
-  is-plain-obj@2.1.0: {}
+  is-plain-obj@2.1.0:
+    optional: true
 
   is-potential-custom-element-name@1.0.1: {}
 
@@ -16962,6 +16968,7 @@ snapshots:
   merge-options@3.0.4:
     dependencies:
       is-plain-obj: 2.1.0
+    optional: true
 
   merge-stream@2.0.0: {}
 
