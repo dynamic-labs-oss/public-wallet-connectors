@@ -9,14 +9,18 @@ jest.mock('@metamask/connect-evm', () => ({
 
 jest.mock('@dynamic-labs/ethereum', () => {
   class EthereumInjectedConnector {
-    public metadata: any;
+    public _metadata: any;
     public walletConnectorEventsEmitter = { emit: jest.fn() };
     public evmNetworks: any[] = [];
+    public ethProviderHelper: any;
     public constructorProps: any;
     constructor(props: any) {
       this.constructorProps = props;
-      this.metadata = props?.metadata ?? {};
+      this._metadata = props?.metadata;
       this.evmNetworks = props?.evmNetworks ?? [];
+    }
+    get metadata() {
+      return this._metadata;
     }
     findProvider() {
       return undefined;
@@ -89,13 +93,8 @@ describe('MetaMaskEvmWalletConnector', () => {
       expect(connector.canConnectViaQrCode).toBe(true);
     });
 
-    it('should set correct metadata', () => {
-      expect(connector.metadata).toEqual({
-        id: 'metamask',
-        name: 'MetaMask',
-        icon: 'https://iconic.dynamic-static-assets.com/icons/sprite.svg#metamask',
-        rdns: 'io.metamask',
-      });
+    it('should set overrideKey to metamask', () => {
+      expect(connector.overrideKey).toBe('metamask');
     });
   });
 
@@ -157,6 +156,7 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should return wrapped provider', () => {
       const mockProvider = {
+        selectedAccount: '0x123',
         request: jest.fn(),
         on: jest.fn(),
         removeListener: jest.fn(),
@@ -170,8 +170,23 @@ describe('MetaMaskEvmWalletConnector', () => {
       expect(provider).not.toBe(mockProvider);
     });
 
+    it('should return undefined when provider has no selectedAccount', () => {
+      const mockProvider = {
+        selectedAccount: undefined,
+        request: jest.fn(),
+        on: jest.fn(),
+        removeListener: jest.fn(),
+      };
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+
+      expect(connector.findProvider()).toBeUndefined();
+    });
+
     it('should normalize eth_requestAccounts object response to array', async () => {
       const mockProvider = {
+        selectedAccount: '0x123',
         request: jest.fn().mockResolvedValue({
           accounts: ['0x123', '0x456'],
           chainId: '0x1',
@@ -193,6 +208,7 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should pass through eth_requestAccounts when already an array', async () => {
       const mockProvider = {
+        selectedAccount: '0x123',
         request: jest.fn().mockResolvedValue(['0x123', '0x456']),
         on: jest.fn(),
         removeListener: jest.fn(),
@@ -211,6 +227,7 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should pass through other methods unchanged', async () => {
       const mockProvider = {
+        selectedAccount: '0x123',
         request: jest.fn().mockResolvedValue('0x1'),
         on: jest.fn(),
         removeListener: jest.fn(),
