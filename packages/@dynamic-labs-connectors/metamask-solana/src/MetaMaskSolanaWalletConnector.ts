@@ -25,7 +25,6 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
  */
 export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
   private signer: ISolana | undefined;
-  private autoConnectEmitted = false;
 
   override name = 'MetaMask';
   override canConnectViaQrCode = true;
@@ -56,11 +55,6 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
   }
 
   override async init(): Promise<void> {
-    if (MetaMaskSolanaSdkClient.isInitialized) {
-      this.emitAutoConnectIfNeeded();
-      return;
-    }
-
     try {
       await MetaMaskSolanaSdkClient.init({
         dappName: 'Dynamic',
@@ -72,18 +66,6 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
     this.walletConnectorEventsEmitter.emit('providerReady', {
       connector: this,
     });
-    this.emitAutoConnectIfNeeded();
-  }
-
-  private emitAutoConnectIfNeeded(): void {
-    if (this.autoConnectEmitted) return;
-    const accounts = MetaMaskSolanaSdkClient.getAccounts();
-    if (accounts.length > 0) {
-      this.autoConnectEmitted = true;
-      this.walletConnectorEventsEmitter.emit('autoConnect', {
-        connector: this,
-      });
-    }
   }
 
   override async connect(): Promise<void> {

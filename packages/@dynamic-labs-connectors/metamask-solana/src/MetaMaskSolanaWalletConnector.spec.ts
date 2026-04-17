@@ -138,7 +138,7 @@ describe('MetaMaskSolanaWalletConnector', () => {
       });
     });
 
-    it('should emit autoConnect when accounts exist', async () => {
+    it('should not emit autoConnect', async () => {
       (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([
         'SoLaNa1234',
       ]);
@@ -146,56 +146,6 @@ describe('MetaMaskSolanaWalletConnector', () => {
       await connector.init();
 
       expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
-      expect(emitSpy).toHaveBeenCalledWith('autoConnect', { connector });
-    });
-
-    it('should NOT emit autoConnect when no accounts', async () => {
-      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([]);
-
-      await connector.init();
-
-      expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
-      expect(emitSpy).not.toHaveBeenCalledWith(
-        'autoConnect',
-        expect.anything(),
-      );
-    });
-
-    it('should skip init if already initialized', async () => {
-      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
-
-      await connector.init();
-
-      expect(MetaMaskSolanaSdkClient.init).not.toHaveBeenCalled();
-      expect(emitSpy).not.toHaveBeenCalledWith(
-        'providerReady',
-        expect.anything(),
-      );
-    });
-
-    it('should emit autoConnect on re-init if accounts exist', async () => {
-      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
-      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([
-        'SoLaNa1234',
-      ]);
-
-      await connector.init();
-
-      expect(MetaMaskSolanaSdkClient.init).not.toHaveBeenCalled();
-      expect(emitSpy).toHaveBeenCalledWith('autoConnect', { connector });
-    });
-
-    it('should only emit autoConnect once per instance', async () => {
-      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([
-        'SoLaNa1234',
-      ]);
-
-      await connector.init();
-      emitSpy.mockClear();
-
-      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
-      await connector.init();
-
       expect(emitSpy).not.toHaveBeenCalledWith(
         'autoConnect',
         expect.anything(),
