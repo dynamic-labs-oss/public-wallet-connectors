@@ -36,11 +36,6 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   }
 
   override async init(): Promise<void> {
-    if (MetaMaskSdkClient.isInitialized) {
-      this.emitAutoConnectIfNeeded();
-      return;
-    }
-
     try {
       await MetaMaskSdkClient.init({
         evmNetworks: this.evmNetworks,
@@ -53,22 +48,6 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     this.walletConnectorEventsEmitter.emit('providerReady', {
       connector: this,
     });
-    this.emitAutoConnectIfNeeded();
-  }
-
-  private emitAutoConnectIfNeeded(): void {
-    if (this.autoConnectEmitted) return;
-    try {
-      const sdk = MetaMaskSdkClient.getInstance();
-      if (sdk.accounts?.length && sdk.selectedChainId) {
-        this.autoConnectEmitted = true;
-        this.walletConnectorEventsEmitter.emit('autoConnect', {
-          connector: this,
-        });
-      }
-    } catch {
-      // SDK not initialized yet
-    }
   }
 
   /**
