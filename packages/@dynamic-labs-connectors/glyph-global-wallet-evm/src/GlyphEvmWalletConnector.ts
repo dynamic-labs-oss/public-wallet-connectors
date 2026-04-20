@@ -5,13 +5,15 @@ import {
 import { type EthereumWalletConnectorOpts } from '@dynamic-labs/ethereum-core';
 import { DynamicError } from '@dynamic-labs/utils';
 import { toPrivyWalletProvider } from '@privy-io/cross-app-connect';
-import { toHex, type Chain as ViemChain } from 'viem';
-import { apeChain, curtis } from 'viem/chains';
+import { toHex, type Chain } from 'viem';
 import {
   GLYPH_APP_ID,
   glyphConnectorDetails,
   STAGING_GLYPH_APP_ID,
+  VIEM_CHAINS,
 } from './constants.js';
+import { GlyphSupportedChainsResponse } from './types.js';
+import { apeChain } from 'viem/chains';
 
 export class GlyphEvmWalletConnector extends EthereumInjectedConnector {
   /**
@@ -20,11 +22,14 @@ export class GlyphEvmWalletConnector extends EthereumInjectedConnector {
    */
   override name = 'Glyph';
 
+  static initHasRun = false;
+
   useStagingTenant: boolean;
 
-  apeChainNetworks: ViemChain[];
+  supportedNetworkIds: number[] = [];
 
-  static initHasRun = false;
+  // networks from constructor `props.evmNetworks`
+  _networkIdsFromProps: (string | number)[] = [];
 
   /**
    * The constructor for the connector, with the relevant metadata
@@ -42,17 +47,10 @@ export class GlyphEvmWalletConnector extends EthereumInjectedConnector {
 
     this.useStagingTenant = useStagingTenant || false;
 
-    this.apeChainNetworks = [];
-
-    if (props.evmNetworks.find((c) => c.chainId === apeChain.id)) {
-      this.apeChainNetworks.push(apeChain);
-    }
-    if (props.evmNetworks.find((c) => c.chainId === curtis.id)) {
-      this.apeChainNetworks.push(curtis);
-    }
+    this._networkIdsFromProps = props.evmNetworks.map((c) => c.chainId);
   }
 
-  // Returns false because we don't want to switch networks and only support apeChain and curtis
+  // Returns false because we don't want to switch networks and only support certain chains
   override supportsNetworkSwitching(): boolean {
     return false;
   }
@@ -68,10 +66,12 @@ export class GlyphEvmWalletConnector extends EthereumInjectedConnector {
     if (GlyphEvmWalletConnector.initHasRun) {
       return;
     }
+
+    await this.setupSupportedNetworks();
     // if there are no apeChain or curtis networks configured, we can't initialize the connector
-    if (this.apeChainNetworks.length === 0) {
+    if (this.supportedNetworkIds.length === 0)
       return;
-    }
+
     GlyphEvmWalletConnector.initHasRun = true;
 
     console.log('[GlyphEvmWalletConnector] onProviderReady');
@@ -81,8 +81,14 @@ export class GlyphEvmWalletConnector extends EthereumInjectedConnector {
   }
 
   override findProvider(): IEthereum | undefined {
-    const chain =
-      this.getActiveChain() || this.apeChainNetworks?.[0] || apeChain;
+    let chain = this.getActiveChain();
+    // chain in case no active chain is set, or if active chain is not supported
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const fallbackChain: Chain = this.supportedNetworkIds.length ?  VIEM_CHAINS[this.supportedNetworkIds[0]!]! : apeChain;
+
+    if(!chain || !this.supportedNetworkIds.includes(chain.id))
+      chain = fallbackChain;
+
     this.setActiveChain(chain);
 
     const privyProvider = toPrivyWalletProvider({
@@ -121,5 +127,16 @@ export class GlyphEvmWalletConnector extends EthereumInjectedConnector {
       method: 'personal_sign',
       params: [toHex(message), address],
     })) as unknown as string;
+  }
+
+  private async setupSupportedNetworks(): Promise<void> {
+    const chainsEndpoint = this.useStagingTenant ? 'https://staging.useglyph.io/api/public/supported_chains' : 'https://useglyph.io/api/public/supported_chains';
+    const response = await fetch(chainsEndpoint);
+    const data = (await response.json()) as GlyphSupportedChainsResponse;
+    for (const chain of data.chains) {
+      if (this._networkIdsFromProps.includes(chain.id)) {
+        this.supportedNetworkIds.push(chain.id);
+      }
+    }
   }
 }
