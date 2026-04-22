@@ -1,0 +1,19 @@
+{
+  "name": "@dynamic-labs-connectors/metamask-evm",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/@dynamic-labs-connectors/metamask-evm/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:swc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/@dynamic-labs-connectors/metamask-evm",
+        "main": "packages/@dynamic-labs-connectors/metamask-evm/src/index.ts",
+        "tsConfig": "packages/@dynamic-labs-connectors/metamask-evm/tsconfig.lib.json",
+        "generateExportsField": true
+      }
+    }
+  }
+}

@@ -23,7 +23,7 @@ jobs:
           ACTIONS_RUNNER_DEBUG: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-        uses: dynamic-labs/sdk/.github/actions/release@main
+        uses: dynamic-labs-oss/public-wallet-connectors/.github/actions/release@main
         with:
           type: publish
           ref: ${{ github.event.inputs.ref }}
