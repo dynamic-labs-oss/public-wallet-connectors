@@ -15,8 +15,6 @@ import { toNumericChainId } from './utils.js';
  * Uses @metamask/connect-evm SDK with headless QR code support.
  */
 export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
-  private autoConnectEmitted = false;
-
   override name = 'MetaMask';
   override overrideKey = 'metamask';
   override canConnectViaQrCode = true;
