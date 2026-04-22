@@ -2,6 +2,7 @@ import { MetaMaskSolanaSdkClient } from './MetaMaskSolanaSdkClient.js';
 
 const mockConnect = jest.fn();
 const mockClientDisconnect = jest.fn();
+const mockWalletDisconnect = jest.fn();
 const mockGetWallet = jest.fn();
 const mockMergeOptions = jest.fn();
 const mockCore = {
