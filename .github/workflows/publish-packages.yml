@@ -7,17 +7,16 @@ on:
         description: Branch or commit to publish. The ref must be a chore(release) commit
         default: main
 
-permissions:
-  id-token: write # Required for OIDC
-  contents: write
-  actions: read
-  deployments: write
-  packages: write
-
 jobs:
   publish:
     environment: release
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC
+      contents: write
+      actions: read
+      deployments: write
+      packages: write
     steps:
       - name: Publish
         env:
