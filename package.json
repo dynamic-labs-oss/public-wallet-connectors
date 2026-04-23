@@ -54,6 +54,19 @@
       "image-size": "^1.2.1",
       "base-x": ">=4.0.1",
       "form-data": ">=4.0.4"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "bigint-buffer",
+      "bufferutil",
+      "cbor-extract",
+      "esbuild",
+      "lefthook",
+      "nx",
+      "protobufjs",
+      "sharp",
+      "unrs-resolver",
+      "utf-8-validate"
+    ]
   }
 }
