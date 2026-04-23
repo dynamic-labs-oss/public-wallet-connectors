@@ -1,6 +1,6 @@
 {
   "name": "@dynamic-labs-connectors/ledger-evm",
-  "version": "4.6.1",
+  "version": "4.6.2",
   "type": "module",
   "main": "./src/index.js",
   "typings": "./src/index.d.ts",
