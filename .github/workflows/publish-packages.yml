@@ -17,11 +17,6 @@ jobs:
       actions: read
       deployments: write
       packages: write
-      # Required when the workflow run was triggered by a commit that
-      # modifies files under .github/workflows/. The Create a Release
-      # REST endpoint then requires contents:write + workflows:write —
-      # see https://docs.github.com/en/rest/releases/releases#create-a-release
-      workflows: write
     steps:
       - name: Publish
         env:
