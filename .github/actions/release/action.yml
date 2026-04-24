@@ -82,8 +82,9 @@ runs:
       run: |-
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-    - name: Publish Packages
+    - name: Create Release and Detect Dist Tag
       if: "${{ inputs.type == 'publish' }}"
+      id: createrelease
       shell: bash
       env:
         NX_BASE:
@@ -97,6 +98,75 @@ runs:
           --fromSha=${{ steps.releasecommits.outputs.fromSha }} \
           --workspaceVersion=${{ steps.releasecommits.outputs.version }} \
           --verbose
+    - name: Build Packages
+      if: "${{ inputs.type == 'publish' }}"
+      shell: bash
+      run: |-
+        pnpm exec nx run-many --target=build --projects="@dynamic-labs-connectors/*"
+    - name: Upgrade npm for OIDC Trusted Publishing
+      # npm's Trusted Publishing (OIDC) support was stabilized in npm 11.5.1.
+      # Node 20 ships with npm ~10.8, so we upgrade before calling `npm publish`.
+      if: "${{ inputs.type == 'publish' }}"
+      shell: bash
+      run: |-
+        npm install -g npm@latest
+        echo "npm: $(npm --version)"
+    - name: Publish Packages to npm
+      if: "${{ inputs.type == 'publish' }}"
+      shell: bash
+      env:
+        DIST_TAG: ${{ steps.createrelease.outputs.distTag }}
+      run: |-
+        set -eo pipefail
+        if [ -z "$DIST_TAG" ]; then
+          echo "::error::distTag output was not set by the Create Release step"
+          exit 1
+        fi
+        echo "Publishing with dist-tag: $DIST_TAG"
+
+        FAILED=()
+        SKIPPED=()
+        PUBLISHED=()
+
+        for pkg_dir in dist/packages/@dynamic-labs-connectors/*/; do
+          [ -d "$pkg_dir" ] || continue
+          [ -f "$pkg_dir/package.json" ] || continue
+
+          PACKAGE_NAME=$(node -p "require('./${pkg_dir}package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./${pkg_dir}package.json').version")
+
+          echo "::group::${PACKAGE_NAME}@${PACKAGE_VERSION}"
+
+          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "Already published, skipping"
+            SKIPPED+=("${PACKAGE_NAME}@${PACKAGE_VERSION}")
+            echo "::endgroup::"
+            continue
+          fi
+
+          echo "Publishing ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+          if (cd "$pkg_dir" && npm publish --tag "$DIST_TAG" --registry=https://registry.npmjs.org); then
+            PUBLISHED+=("${PACKAGE_NAME}@${PACKAGE_VERSION}")
+          else
+            echo "::error::Failed to publish ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+            FAILED+=("${PACKAGE_NAME}@${PACKAGE_VERSION}")
+          fi
+          echo "::endgroup::"
+        done
+
+        echo ""
+        echo "Publish summary:"
+        echo "  Published: ${#PUBLISHED[@]}"
+        for p in "${PUBLISHED[@]}"; do echo "    - $p"; done
+        echo "  Skipped:   ${#SKIPPED[@]}"
+        for p in "${SKIPPED[@]}"; do echo "    - $p"; done
+        echo "  Failed:    ${#FAILED[@]}"
+        for p in "${FAILED[@]}"; do echo "    - $p"; done
+
+        if [ "${#FAILED[@]}" -gt 0 ]; then
+          echo "::error::${#FAILED[@]} package(s) failed to publish"
+          exit 1
+        fi
     - name: Bump Version
       if: "${{ inputs.type == 'bump' }}"
       shell: bash

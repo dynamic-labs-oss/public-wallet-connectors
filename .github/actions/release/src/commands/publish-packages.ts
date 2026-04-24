@@ -3,14 +3,14 @@ import * as core from '@actions/core';
 import { hideBin } from "yargs/helpers";
 import { getOctokit } from "@actions/github";
 import { detectTag } from "../lib/detectTag.js";
-import { releaseChangelog, releasePublish } from "nx/release/index.js";
+import { releaseChangelog } from "nx/release/index.js";
 import { NxReleaseChangelogResult } from "nx/src/command-line/release/changelog.js";
 
 const { GITHUB_WORKSPACE } = process.env
 
 /**
  * HACK:
- * 
+ *
  * Because of this function in NX https://github.com/nrwl/nx/blob/7232b392ba26ff74130170a5bec229d9ccef7005/packages/nx/src/plugins/js/utils/register.ts#L12-L47
  * The _ variable is set to 'tsx-spoof' if the file ends with tsx
  * This is to allow natural behavior when nx tries to generate the project graph and tries to `require('a.ts.file.ts)`
@@ -27,7 +27,7 @@ const createRelease = async (
   core.startGroup('Create Release');
 
   if (!process.env.GITHUB_TOKEN?.length) {
-    core.error('GITHUB_TOKEN is required to create a release');
+    throw new Error('GITHUB_TOKEN is required to create a release');
   }
 
   const oktokit = getOctokit(process.env.GITHUB_TOKEN);
@@ -114,7 +114,6 @@ const publishPackages = async () => {
   const workspaceVersion = options.workspaceVersion;
 
   // Updates the changelog according to conventional commits
-  // Also will create github release with changelog
   core.info(`Calling changelog with: ${JSON.stringify({
     version: workspaceVersion,
     to: toSha,
@@ -139,7 +138,7 @@ const publishPackages = async () => {
   });
 
   // Detect tag to use for publishing
-  // Using @dynamic-labs-connector/safe-evm as the package name for determining the latest version
+  // Using @dynamic-labs-connectors/safe-evm as the canonical package for latest-version comparison
   const distTag = await detectTag('@dynamic-labs-connectors/safe-evm', workspaceVersion);
 
   if (options.createRelease) {
@@ -149,21 +148,14 @@ const publishPackages = async () => {
     await createRelease(toSha, workspaceChangelog, distTag === 'latest', options.dryRun);
   }
 
-  const results = await releasePublish({
-    dryRun: options.dryRun,
-    tag: distTag,
-    verbose: options.verbose,
-  }); 
-
-  if (Object.entries(results).some(([_, value]) => value.code !== 0)) {
-    core.setFailed('Failed to publish packages');
-  } else {
-    core.summary.addDetails('Published', `Published packages with dist-tag: ${distTag}, version: ${workspaceVersion}`);
-    core.summary.addEOL();
-  }
+  // Expose distTag to the next workflow step, which runs `npm publish` directly
+  // so that OIDC trusted publishing engages (pnpm publish via nx does not reliably
+  // perform the OIDC exchange against registry.npmjs.org).
+  core.setOutput('distTag', distTag);
+  core.info(`Detected distTag: ${distTag} (version: ${workspaceVersion})`);
 };
 
-publishPackages().then(() => {
-  process.exit(0);
+publishPackages().catch((err) => {
+  core.setFailed(err instanceof Error ? err.message : String(err));
+  process.exit(1);
 });
-
