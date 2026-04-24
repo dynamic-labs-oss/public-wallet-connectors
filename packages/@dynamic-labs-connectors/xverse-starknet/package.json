@@ -1,6 +1,6 @@
 {
   "name": "@dynamic-labs-connectors/xverse-starknet",
-  "version": "4.6.3",
+  "version": "4.6.4",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dynamic-labs-oss/public-wallet-connectors.git",
