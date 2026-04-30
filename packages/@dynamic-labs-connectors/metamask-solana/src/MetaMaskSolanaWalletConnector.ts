@@ -27,6 +27,7 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
   private signer: ISolana | undefined;
 
   override name = 'MetaMask';
+  override overrideKey = 'metamasksol';
   override canConnectViaQrCode = true;
   override canHandleMultipleConnections = false;
 
@@ -47,7 +48,10 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
    * Returns true only when a real MetaMask injected provider is present.
    */
   override isInstalledOnBrowser(): boolean {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
     const ethereum = (window as unknown as Record<string, unknown>)[
       'ethereum'
     ] as { isMetaMask?: boolean } | undefined;
@@ -55,6 +59,10 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
   }
 
   override async init(): Promise<void> {
+    this.walletConnectorEventsEmitter.emit(
+      'connectorInitStarted',
+      this.overrideKey,
+    );
     try {
       await MetaMaskSolanaSdkClient.init({
         dappName: 'Dynamic',
@@ -63,9 +71,10 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
       logger.error('[MetaMaskSolanaWalletConnector] SDK init failed:', error);
     }
 
-    this.walletConnectorEventsEmitter.emit('providerReady', {
-      connector: this,
-    });
+    this.walletConnectorEventsEmitter.emit(
+      'connectorInitCompleted',
+      this.overrideKey,
+    );
   }
 
   override async connect(): Promise<void> {
@@ -130,7 +139,12 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
 
   private buildSigner(): ISolana | undefined {
     const wallet = MetaMaskSolanaSdkClient.getWallet();
-    if (!wallet) return undefined;
+    logger.logVerboseTroubleshootingMessage('[MetaMaskSolanaWalletConnector] buildSigner', {
+      wallet,
+    });
+    if (!wallet) {
+      return undefined;
+    }
 
     return createWalletStandardAdapter(wallet, () => {
       const network = this.getSelectedNetwork();
