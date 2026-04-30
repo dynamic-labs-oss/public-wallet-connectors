@@ -10,11 +10,14 @@ export default function Home() {
   const { primaryWallet, user, handleLogOut, network } = useDynamicContext();
   const [signResult, setSignResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [networkOpsResult, setNetworkOpsResult] = useState<string | null>(null);
+  const [switchChainId, setSwitchChainId] = useState("137");
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const handleSignMessage = async () => {
     setError(null);
     setSignResult(null);
+    setNetworkOpsResult(null);
 
     if (!primaryWallet) {
       setError("No wallet connected");
@@ -33,8 +36,63 @@ export default function Home() {
   const handleDisconnect = async () => {
     setError(null);
     setSignResult(null);
+    setNetworkOpsResult(null);
     try {
       await handleLogOut();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const parseChainIdArg = (): number | string => {
+    const raw = switchChainId.trim();
+    if (raw.startsWith("0x") || raw.startsWith("0X")) {
+      const n = parseInt(raw, 16);
+      return Number.isNaN(n) ? raw : n;
+    }
+    const n = Number(raw);
+    return Number.isNaN(n) ? raw : n;
+  };
+
+  const handlePrimaryWalletSwitchNetwork = async () => {
+    setError(null);
+    setNetworkOpsResult(null);
+    if (!primaryWallet) {
+      setError("No wallet connected");
+      return;
+    }
+    try {
+      const chainId = parseChainIdArg();
+      await primaryWallet.switchNetwork(chainId);
+      setNetworkOpsResult(
+        `primaryWallet.switchNetwork(${JSON.stringify(chainId)}) completed.`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleConnectorGetNetwork = async () => {
+    setError(null);
+    setNetworkOpsResult(null);
+    if (!primaryWallet?.connector) {
+      setError("No connector on primary wallet");
+      return;
+    }
+    try {
+      const fromConnector = await primaryWallet.connector.getNetwork();
+      const fromWallet = await primaryWallet.getNetwork();
+      setNetworkOpsResult(
+        JSON.stringify(
+          {
+            "connector.getNetwork()": fromConnector,
+            "primaryWallet.getNetwork()": fromWallet,
+            contextNetworkFromDynamic: network,
+          },
+          null,
+          2,
+        ),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -115,28 +173,68 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 className="text-xl font-semibold text-gray-800">Actions</h2>
 
-            <div className="flex gap-4">
-              <button
-                onClick={handleSignMessage}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Sign Message
-              </button>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3 items-end">
+                <label className="flex flex-col gap-1 text-sm text-gray-600">
+                  Chain for switchNetwork
+                  <input
+                    type="text"
+                    value={switchChainId}
+                    onChange={(e) => setSwitchChainId(e.target.value)}
+                    placeholder="137 or 0x89"
+                    className="px-3 py-2 border border-gray-300 rounded-lg font-mono text-gray-900 w-40"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={handlePrimaryWalletSwitchNetwork}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  primaryWallet.switchNetwork()
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConnectorGetNetwork}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  connector.getNetwork()
+                </button>
+              </div>
 
-              <button
-                onClick={handleDisconnect}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Disconnect
-              </button>
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={handleSignMessage}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Sign Message
+                </button>
 
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Refresh Page
-              </button>
+                <button
+                  onClick={handleDisconnect}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Disconnect
+                </button>
+
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Refresh Page
+                </button>
+              </div>
             </div>
+
+            {networkOpsResult && (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <p className="text-sm font-medium text-slate-800">
+                  Network API result
+                </p>
+                <pre className="mt-2 text-xs font-mono text-slate-700 whitespace-pre-wrap break-all">
+                  {networkOpsResult}
+                </pre>
+              </div>
+            )}
 
             {signResult && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
