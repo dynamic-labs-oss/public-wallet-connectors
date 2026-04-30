@@ -7,22 +7,21 @@ on:
         description: Branch or commit to publish. The ref must be a chore(release) commit
         default: main
 
-permissions:
-  contents: write
-  actions: read
-  deployments: write
-  packages: write
-
 jobs:
   publish:
     environment: release
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC
+      contents: write
+      actions: read
+      deployments: write
+      packages: write
     steps:
       - name: Publish
         env:
           ACTIONS_RUNNER_DEBUG: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
         uses: dynamic-labs-oss/public-wallet-connectors/.github/actions/release@main
         with:
           type: publish
