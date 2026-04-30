@@ -28,12 +28,22 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     const metaMaskEip6963Provider =
       this.ethProviderHelper?.eip6963ProviderLookup(this.metadata.rdns!);
 
+    logger.logVerboseTroubleshootingMessage('[MetaMaskEvmWalletConnector] isInstalledOnBrowser', {
+      metaMaskEip6963Provider,
+      metadata: this.metadata,
+    });
+
     const isInstalled = Boolean(metaMaskEip6963Provider);
 
     return isInstalled;
   }
 
   override async init(): Promise<void> {
+    this.walletConnectorEventsEmitter.emit(
+      'connectorInitStarted',
+      this.overrideKey,
+    );
+
     try {
       await MetaMaskSdkClient.init({
         evmNetworks: this.evmNetworks,
@@ -43,9 +53,10 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       logger.error('[MetaMaskEvmWalletConnector] SDK init failed:', error);
     }
 
-    this.walletConnectorEventsEmitter.emit('providerReady', {
-      connector: this,
-    });
+    this.walletConnectorEventsEmitter.emit(
+      'connectorInitCompleted',
+      this.overrideKey
+    );
   }
 
   /**
@@ -55,6 +66,11 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
    */
   override findProvider(): IEthereum | undefined {
     const provider = MetaMaskSdkClient.getProvider();
+
+    logger.logVerboseTroubleshootingMessage('[MetaMaskEvmWalletConnector] findProvider', {
+      provider,
+    });
+
     // The new SDK always has a EIP-1193 provider available even if there is no established connection.
     // If Dynamic assumes that a provider can only be available if there is an established connection,
     // then this check is needed. If wrong, then this check can be removed.

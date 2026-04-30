@@ -40,6 +40,7 @@ jest.mock('@dynamic-labs/wallet-connector-core', () => ({
   logger: {
     debug: jest.fn(),
     error: jest.fn(),
+    logVerboseTroubleshootingMessage: jest.fn(),
   },
 }));
 
@@ -98,6 +99,76 @@ describe('MetaMaskEvmWalletConnector', () => {
     });
   });
 
+  describe('isInstalledOnBrowser', () => {
+    it('should return true when ethProviderHelper finds a provider', () => {
+      const eip6963ProviderLookup = jest
+        .fn()
+        .mockReturnValue({ provider: {} });
+      Object.defineProperty(connector, 'ethProviderHelper', {
+        value: { eip6963ProviderLookup },
+        writable: true,
+      });
+      Object.defineProperty(connector, '_metadata', {
+        value: { rdns: 'io.metamask' },
+        writable: true,
+      });
+
+      expect(connector.isInstalledOnBrowser()).toBe(true);
+      expect(eip6963ProviderLookup).toHaveBeenCalledWith('io.metamask');
+    });
+
+    it('should return false when ethProviderHelper returns nothing', () => {
+      const eip6963ProviderLookup = jest.fn().mockReturnValue(undefined);
+      Object.defineProperty(connector, 'ethProviderHelper', {
+        value: { eip6963ProviderLookup },
+        writable: true,
+      });
+      Object.defineProperty(connector, '_metadata', {
+        value: { rdns: 'io.metamask' },
+        writable: true,
+      });
+
+      expect(connector.isInstalledOnBrowser()).toBe(false);
+    });
+
+    it('should return false when ethProviderHelper is undefined', () => {
+      Object.defineProperty(connector, 'ethProviderHelper', {
+        value: undefined,
+        writable: true,
+      });
+      Object.defineProperty(connector, '_metadata', {
+        value: { rdns: 'io.metamask' },
+        writable: true,
+      });
+
+      expect(connector.isInstalledOnBrowser()).toBe(false);
+    });
+
+    it('should log troubleshooting context with metadata and provider', () => {
+      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      const fakeProvider = { provider: 'fake' };
+      const eip6963ProviderLookup = jest.fn().mockReturnValue(fakeProvider);
+      Object.defineProperty(connector, 'ethProviderHelper', {
+        value: { eip6963ProviderLookup },
+        writable: true,
+      });
+      Object.defineProperty(connector, '_metadata', {
+        value: { rdns: 'io.metamask' },
+        writable: true,
+      });
+
+      connector.isInstalledOnBrowser();
+
+      expect(logger.logVerboseTroubleshootingMessage).toHaveBeenCalledWith(
+        '[MetaMaskEvmWalletConnector] isInstalledOnBrowser',
+        expect.objectContaining({
+          metaMaskEip6963Provider: fakeProvider,
+          metadata: { rdns: 'io.metamask' },
+        }),
+      );
+    });
+  });
+
   describe('init', () => {
     beforeEach(() => {
       Object.defineProperty(connector, 'evmNetworks', {
@@ -117,41 +188,88 @@ describe('MetaMaskEvmWalletConnector', () => {
       );
     });
 
-    it('should emit providerReady event', async () => {
+    it('should emit connectorInitStarted with overrideKey before initializing', async () => {
+      let initCalledWhen: 'before' | 'after' | undefined;
+      (MetaMaskSdkClient.init as jest.Mock).mockImplementation(() => {
+        initCalledWhen = emitSpy.mock.calls.some(
+          ([event]) => event === 'connectorInitStarted',
+        )
+          ? 'after'
+          : 'before';
+        return Promise.resolve();
+      });
+
       await connector.init();
 
-      expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
+      expect(emitSpy).toHaveBeenCalledWith(
+        'connectorInitStarted',
+        'metamask',
+      );
+      expect(initCalledWhen).toBe('after');
     });
 
-    it('should not emit autoConnect', async () => {
+    it('should emit connectorInitCompleted after init resolves', async () => {
+      await connector.init();
+
+      expect(emitSpy).toHaveBeenCalledWith(
+        'connectorInitCompleted',
+        'metamask',
+      );
+    });
+
+    it('should not emit autoConnect or providerReady', async () => {
       mockSdk.accounts = ['0x123'];
       mockSdk.selectedChainId = '0x1';
 
       await connector.init();
 
-      expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
       expect(emitSpy).not.toHaveBeenCalledWith(
         'autoConnect',
         expect.anything(),
       );
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'providerReady',
+        expect.anything(),
+      );
     });
 
-    it('should still emit providerReady when SDK init fails', async () => {
+    it('should still emit connectorInitCompleted when SDK init fails', async () => {
       (MetaMaskSdkClient.init as jest.Mock).mockRejectedValue(
         new Error('SDK failed'),
       );
 
       await connector.init();
 
-      expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
+      expect(emitSpy).toHaveBeenCalledWith(
+        'connectorInitStarted',
+        'metamask',
+      );
+      expect(emitSpy).toHaveBeenCalledWith(
+        'connectorInitCompleted',
+        'metamask',
+      );
     });
-
   });
 
   describe('findProvider', () => {
     it('should return undefined if SDK has no provider', () => {
       (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(undefined);
       expect(connector.findProvider()).toBeUndefined();
+    });
+
+    it('should log troubleshooting context with the resolved provider', () => {
+      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      const mockProvider = { selectedAccount: '0x123' };
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+
+      connector.findProvider();
+
+      expect(logger.logVerboseTroubleshootingMessage).toHaveBeenCalledWith(
+        '[MetaMaskEvmWalletConnector] findProvider',
+        { provider: mockProvider },
+      );
     });
 
     it('should return wrapped provider', () => {

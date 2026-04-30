@@ -11,6 +11,7 @@ jest.mock('@dynamic-labs/wallet-connector-core', () => ({
     debug: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
+    logVerboseTroubleshootingMessage: jest.fn(),
   },
 }));
 
@@ -19,6 +20,9 @@ jest.mock('@dynamic-labs/solana-core', () => ({
     walletConnectorEventsEmitter = { emit: jest.fn() };
     constructor(_props: any) {
       // no-op
+    }
+    get key() {
+      return 'metamasksol';
     }
     getSelectedNetwork() {
       return { cluster: 'mainnet' };
@@ -90,6 +94,10 @@ describe('MetaMaskSolanaWalletConnector', () => {
     it('should set canConnectViaQrCode to true', () => {
       expect(connector.canConnectViaQrCode).toBe(true);
     });
+
+    it('should set overrideKey to metamasksol', () => {
+      expect(connector.key).toBe('metamasksol');
+    });
   });
 
   describe('isInstalledOnBrowser', () => {
@@ -130,36 +138,50 @@ describe('MetaMaskSolanaWalletConnector', () => {
       });
     });
 
-    it('should emit providerReady', async () => {
+    it('should emit connectorInitStarted with the connector key before initializing', async () => {
+      let initCalledWhen: 'before' | 'after' | undefined;
+      (MetaMaskSolanaSdkClient.init as jest.Mock).mockImplementation(() => {
+        initCalledWhen = emitSpy.mock.calls.some(
+          ([event]) => event === 'connectorInitStarted',
+        )
+          ? 'after'
+          : 'before';
+        return Promise.resolve();
+      });
+
       await connector.init();
 
-      expect(emitSpy).toHaveBeenCalledWith('providerReady', {
-        connector,
-      });
+      expect(emitSpy).toHaveBeenCalledWith(
+        'connectorInitStarted',
+        'metamasksol',
+      );
+      expect(initCalledWhen).toBe('after');
     });
 
-    it('should not emit autoConnect', async () => {
-      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([
-        'SoLaNa1234',
-      ]);
-
+    it('should emit connectorInitCompleted after init resolves', async () => {
       await connector.init();
 
-      expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
-      expect(emitSpy).not.toHaveBeenCalledWith(
-        'autoConnect',
-        expect.anything(),
+      expect(emitSpy).toHaveBeenCalledWith(
+        'connectorInitCompleted',
+        'metamasksol',
       );
     });
 
-    it('should still emit providerReady if init throws', async () => {
+    it('should still emit connectorInitCompleted if init throws', async () => {
       (MetaMaskSolanaSdkClient.init as jest.Mock).mockRejectedValue(
         new Error('init failed'),
       );
 
       await connector.init();
 
-      expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
+      expect(emitSpy).toHaveBeenCalledWith(
+        'connectorInitStarted',
+        'metamasksol',
+      );
+      expect(emitSpy).toHaveBeenCalledWith(
+        'connectorInitCompleted',
+        'metamasksol',
+      );
     });
   });
 
@@ -178,6 +200,38 @@ describe('MetaMaskSolanaWalletConnector', () => {
       await connector.connect();
 
       expect(MetaMaskSolanaSdkClient.connect).toHaveBeenCalled();
+    });
+
+    it('should log troubleshooting context with the resolved wallet', async () => {
+      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      const mockWallet = { accounts: [{ address: 'SoLaNa1234' }] };
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(
+        mockWallet,
+      );
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+
+      await connector.connect();
+
+      expect(logger.logVerboseTroubleshootingMessage).toHaveBeenCalledWith(
+        '[MetaMaskSolanaWalletConnector] buildSigner',
+        { wallet: mockWallet },
+      );
+    });
+
+    it('should pass a cluster resolver to the wallet standard adapter', async () => {
+      const { createWalletStandardAdapter } = jest.requireMock(
+        './WalletStandardAdapter.js',
+      );
+      const mockWallet = { accounts: [{ address: 'SoLaNa1234' }] };
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(
+        mockWallet,
+      );
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+
+      await connector.connect();
+
+      const clusterResolver = createWalletStandardAdapter.mock.calls.at(-1)[1];
+      expect(clusterResolver()).toBe('mainnet');
     });
   });
 
@@ -214,6 +268,26 @@ describe('MetaMaskSolanaWalletConnector', () => {
       expect(result!.length).toBeGreaterThan(0);
     });
 
+    it('should return undefined when signer returns no signature', async () => {
+      const mockSigner = {
+        signMessage: jest.fn().mockResolvedValue(undefined),
+      };
+
+      const { createWalletStandardAdapter } = jest.requireMock(
+        './WalletStandardAdapter.js',
+      );
+      createWalletStandardAdapter.mockReturnValue(mockSigner);
+
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue({
+        accounts: [{ address: 'SoLaNa1234' }],
+      });
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+      await connector.connect();
+
+      const result = await connector.signMessage('hello');
+
+      expect(result).toBeUndefined();
+    });
   });
 
   describe('getAddress', () => {
