@@ -10,6 +10,7 @@
     "test": "pnpm nx run-many --target test --parallel --maxParallel=4 -- --detectOpenHandles --forceExit",
     "nuke": "rm -fr node_modules/.cache dist && npx nx daemon --stop"
   },
+  "packageManager": "pnpm@10.30.3",
   "devDependencies": {
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-typescript": "^7.26.0",
