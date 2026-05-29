@@ -1,6 +1,8 @@
 import {
+  eventListenerHandlers,
   logger,
   type GetAddressOpts,
+  type WalletConnector,
 } from '@dynamic-labs/wallet-connector-core';
 import {
   SolanaWalletConnector,
@@ -9,7 +11,16 @@ import {
 } from '@dynamic-labs/solana-core';
 
 import { MetaMaskSolanaSdkClient } from './MetaMaskSolanaSdkClient.js';
+import type { WalletAccount } from './types.js';
 import { createWalletStandardAdapter } from './WalletStandardAdapter.js';
+
+type StandardEventsChangeListener = (properties: {
+  accounts?: readonly WalletAccount[];
+}) => void;
+type StandardEventsOn = (
+  event: 'change',
+  listener: StandardEventsChangeListener,
+) => () => void;
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
   let binary = '';
@@ -66,6 +77,37 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
     this.walletConnectorEventsEmitter.emit('providerReady', {
       connector: this,
     });
+  }
+
+  override setupEventListeners(): void {
+    const wallet = MetaMaskSolanaSdkClient.getWallet();
+
+    if (!wallet) {
+      return;
+    }
+
+    const onFn = wallet.features['standard:events']?.['on'] as
+      | StandardEventsOn
+      | undefined;
+
+    if (!onFn) {
+      return;
+    }
+
+    const { handleAccountChange } = eventListenerHandlers(
+      this as unknown as WalletConnector,
+    );
+
+    const unsubscribe = onFn('change', (properties) => {
+      if (!properties.accounts) {
+        return;
+      }
+      void handleAccountChange(properties.accounts.map((a) => a.address));
+    });
+
+    this.teardownEventListeners = () => {
+      unsubscribe();
+    };
   }
 
   override async connect(): Promise<void> {

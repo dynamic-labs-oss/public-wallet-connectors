@@ -36,11 +36,19 @@ jest.mock('@dynamic-labs/ethereum', () => {
 });
 
 jest.mock('./MetaMaskSdkClient.js');
+
+const mockEventListeners = {
+  handleAccountChange: jest.fn(),
+  handleChainChange: jest.fn(),
+  handleDisconnect: jest.fn(),
+};
+
 jest.mock('@dynamic-labs/wallet-connector-core', () => ({
   logger: {
     debug: jest.fn(),
     error: jest.fn(),
   },
+  eventListenerHandlers: jest.fn(() => mockEventListeners),
 }));
 
 const walletConnectorProps: EthereumWalletConnectorOpts = {
@@ -243,6 +251,77 @@ describe('MetaMaskEvmWalletConnector', () => {
       expect(mockProvider.request).toHaveBeenCalledWith({
         method: 'eth_chainId',
       });
+    });
+  });
+
+  describe('setupEventListeners', () => {
+    const buildProviderMock = () => ({
+      on: jest.fn(),
+      off: jest.fn(),
+    });
+
+    it('should noop when no provider is available', async () => {
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(undefined);
+
+      await connector.setupEventListeners();
+
+      const { eventListenerHandlers } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
+      expect(eventListenerHandlers).not.toHaveBeenCalled();
+      expect(connector.teardownEventListeners).toBeUndefined();
+    });
+
+    it('should register listeners for accountsChanged/chainChanged/disconnect', async () => {
+      const providerMock = buildProviderMock();
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        providerMock,
+      );
+
+      await connector.setupEventListeners();
+
+      const { eventListenerHandlers } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
+      expect(eventListenerHandlers).toHaveBeenCalledWith(connector);
+
+      expect(providerMock.on).toHaveBeenCalledTimes(3);
+      expect(providerMock.on).toHaveBeenCalledWith(
+        'accountsChanged',
+        mockEventListeners.handleAccountChange,
+      );
+      expect(providerMock.on).toHaveBeenCalledWith(
+        'chainChanged',
+        mockEventListeners.handleChainChange,
+      );
+      expect(providerMock.on).toHaveBeenCalledWith(
+        'disconnect',
+        mockEventListeners.handleDisconnect,
+      );
+    });
+
+    it('teardown should remove the registered listeners via provider.off', async () => {
+      const providerMock = buildProviderMock();
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        providerMock,
+      );
+
+      await connector.setupEventListeners();
+      connector.teardownEventListeners?.();
+
+      expect(providerMock.off).toHaveBeenCalledTimes(3);
+      expect(providerMock.off).toHaveBeenCalledWith(
+        'accountsChanged',
+        mockEventListeners.handleAccountChange,
+      );
+      expect(providerMock.off).toHaveBeenCalledWith(
+        'chainChanged',
+        mockEventListeners.handleChainChange,
+      );
+      expect(providerMock.off).toHaveBeenCalledWith(
+        'disconnect',
+        mockEventListeners.handleDisconnect,
+      );
     });
   });
 

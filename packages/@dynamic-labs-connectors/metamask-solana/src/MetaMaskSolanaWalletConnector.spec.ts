@@ -6,12 +6,19 @@ jest.mock('@metamask/connect-solana', () => ({
   createSolanaClient: jest.fn(),
 }));
 
+const mockEventListeners = {
+  handleAccountChange: jest.fn(),
+  handleChainChange: jest.fn(),
+  handleDisconnect: jest.fn(),
+};
+
 jest.mock('@dynamic-labs/wallet-connector-core', () => ({
   logger: {
     debug: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
   },
+  eventListenerHandlers: jest.fn(() => mockEventListeners),
 }));
 
 jest.mock('@dynamic-labs/solana-core', () => ({
@@ -160,6 +167,100 @@ describe('MetaMaskSolanaWalletConnector', () => {
       await connector.init();
 
       expect(emitSpy).toHaveBeenCalledWith('providerReady', { connector });
+    });
+  });
+
+  describe('setupEventListeners', () => {
+    const buildWalletWithEvents = () => {
+      const off = jest.fn();
+      const on = jest.fn().mockReturnValue(off);
+      const wallet = {
+        accounts: [{ address: 'SoLaNa1234' }],
+        features: {
+          'standard:events': { on },
+        },
+      };
+      return { wallet, on, off };
+    };
+
+    it('should noop when no wallet is available', () => {
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(null);
+
+      connector.setupEventListeners();
+
+      const { eventListenerHandlers } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
+      expect(eventListenerHandlers).not.toHaveBeenCalled();
+      expect(connector.teardownEventListeners).toBeUndefined();
+    });
+
+    it('should noop when the wallet does not expose standard:events', () => {
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue({
+        accounts: [],
+        features: {},
+      });
+
+      connector.setupEventListeners();
+
+      const { eventListenerHandlers } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
+      expect(eventListenerHandlers).not.toHaveBeenCalled();
+      expect(connector.teardownEventListeners).toBeUndefined();
+    });
+
+    it("should subscribe to the wallet's change event", () => {
+      const { wallet, on } = buildWalletWithEvents();
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(wallet);
+
+      connector.setupEventListeners();
+
+      const { eventListenerHandlers } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
+      expect(eventListenerHandlers).toHaveBeenCalledWith(connector);
+      expect(on).toHaveBeenCalledTimes(1);
+      expect(on).toHaveBeenCalledWith('change', expect.any(Function));
+    });
+
+    it('should forward updated account addresses to handleAccountChange', () => {
+      const { wallet, on } = buildWalletWithEvents();
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(wallet);
+
+      connector.setupEventListeners();
+
+      const changeListener = on.mock.calls[0][1];
+      changeListener({
+        accounts: [{ address: 'SoLaNa1' }, { address: 'SoLaNa2' }],
+      });
+
+      expect(mockEventListeners.handleAccountChange).toHaveBeenCalledWith([
+        'SoLaNa1',
+        'SoLaNa2',
+      ]);
+    });
+
+    it('should ignore change events without accounts updates', () => {
+      const { wallet, on } = buildWalletWithEvents();
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(wallet);
+
+      connector.setupEventListeners();
+
+      const changeListener = on.mock.calls[0][1];
+      changeListener({ chains: ['solana:mainnet'] });
+
+      expect(mockEventListeners.handleAccountChange).not.toHaveBeenCalled();
+    });
+
+    it('teardown should call the unsubscribe returned by on()', () => {
+      const { wallet, off } = buildWalletWithEvents();
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(wallet);
+
+      connector.setupEventListeners();
+      connector.teardownEventListeners?.();
+
+      expect(off).toHaveBeenCalledTimes(1);
     });
   });
 
