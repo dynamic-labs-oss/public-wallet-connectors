@@ -1,6 +1,8 @@
 import {
+  eventListenerHandlers,
   logger,
   type GetAddressOpts,
+  type WalletConnector,
 } from '@dynamic-labs/wallet-connector-core';
 import {
   EthereumInjectedConnector,
@@ -93,6 +95,27 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       on: provider.on?.bind(provider),
       removeListener: provider.removeListener?.bind(provider),
     } as unknown as IEthereum;
+  }
+
+  override async setupEventListeners(): Promise<void> {
+    const provider = MetaMaskSdkClient.getProvider();
+
+    if (!provider) {
+      return;
+    }
+
+    const { handleAccountChange, handleChainChange, handleDisconnect } =
+      eventListenerHandlers(this as unknown as WalletConnector);
+
+    provider.on('accountsChanged', handleAccountChange);
+    provider.on('chainChanged', handleChainChange);
+    provider.on('disconnect', handleDisconnect);
+
+    this.teardownEventListeners = () => {
+      provider.off('accountsChanged', handleAccountChange);
+      provider.off('chainChanged', handleChainChange);
+      provider.off('disconnect', handleDisconnect);
+    };
   }
 
   override async getAddress(
