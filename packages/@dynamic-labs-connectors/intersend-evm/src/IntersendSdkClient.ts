@@ -9,6 +9,20 @@ interface IntersendInfo {
   chainId: number;
 }
 
+/**
+ * Origins of the Interspace (Intersend) wallet host that is allowed to embed
+ * the dapp and exchange `postMessage` traffic with this connector.
+ *
+ * Every outbound message is pinned to one of these origins (never `'*'`) and
+ * every inbound message whose `event.origin` is not the verified wallet origin
+ * is dropped. Override at runtime via `IntersendSdkClient.init({ allowedOrigins })`
+ * if the wallet host is served from a different origin.
+ */
+export const DEFAULT_INTERSEND_ALLOWED_ORIGINS = [
+  'https://app.intersend.io',
+  'https://app.interspace.fi',
+];
+
 // Create a proper provider type that extends IEthereum
 class IntersendProvider extends EventEmitter {
   public readonly isIntersend = true;
@@ -35,22 +49,22 @@ class IntersendProvider extends EventEmitter {
       case 'eth_sendTransaction':
         return new Promise((resolve) => {
           IntersendSdkClient.setPendingRequest(requestId, resolve);
-          window.parent.postMessage({
+          IntersendSdkClient.postToWallet({
             type: 'TRANSACTION_REQUEST',
             payload: { params: methodParams[0] },
             requestId
-          }, '*');
+          });
         });
 
       case 'personal_sign':
       case 'eth_sign':
         return new Promise((resolve) => {
           IntersendSdkClient.setPendingRequest(requestId, resolve);
-          window.parent.postMessage({
+          IntersendSdkClient.postToWallet({
             type: 'SIGN_MESSAGE_REQUEST',
             payload: { message: methodParams[0] },
             requestId
-          }, '*');
+          });
         });
 
       default:
@@ -64,36 +78,88 @@ export class IntersendSdkClient {
   static provider: IntersendProvider;
   static walletClient: WalletClient;
   static intersendInfo: IntersendInfo | undefined;
+  /**
+   * Origin of the wallet host verified during the connect handshake. Outbound
+   * messages are pinned to it and inbound messages from any other origin are
+   * rejected. Stays `undefined` until a trusted host answers the connect
+   * request, so nothing is trusted before the handshake completes.
+   */
+  static walletOrigin: string | undefined;
+  private static allowedOrigins: string[] = DEFAULT_INTERSEND_ALLOWED_ORIGINS;
   private static pendingRequests = new Map<string, (value: any) => void>();
+
+  private static isAllowedOrigin = (origin: string): boolean =>
+    IntersendSdkClient.allowedOrigins.includes(origin);
+
+  /**
+   * Sends a message to the wallet host, pinned to the origin verified during
+   * the connect handshake. Drops the message if no trusted origin is known.
+   */
+  static postToWallet = (message: Record<string, unknown>): void => {
+    const targetOrigin = IntersendSdkClient.walletOrigin;
+    if (!targetOrigin) {
+      logger.debug(
+        '[IntersendSdkClient] no verified wallet origin; dropping message',
+      );
+      return;
+    }
+    window.parent.postMessage(message, targetOrigin);
+  };
 
   private constructor() {
     throw new Error('IntersendSdkClient is not instantiable');
   }
 
-  static init = async () => {
+  static init = async (options?: { allowedOrigins?: string[] }) => {
     if (IntersendSdkClient.isInitialized) {
       return;
     }
 
     IntersendSdkClient.isInitialized = true;
+    if (options?.allowedOrigins?.length) {
+      IntersendSdkClient.allowedOrigins = options.allowedOrigins;
+    }
     logger.debug('[IntersendSdkClient] initializing sdk');
 
     // Setup message listener for communication with parent frame
     window.addEventListener('message', IntersendSdkClient.handleMessage);
 
-    // Request initial connection info from parent
-    window.parent.postMessage({ type: 'INTERSEND_CONNECT_REQUEST' }, '*');
+    // Bind the connect handshake to a per-init id so a connect response cannot
+    // be injected out of band.
+    const connectRequestId = `${Date.now()}-${Math.random()}`;
+
+    // Request initial connection info from the parent. Pin each request to a
+    // trusted origin: the browser only delivers a message to the parent when
+    // its origin matches the targetOrigin, so an untrusted embedder never
+    // receives the request and cannot answer it.
+    for (const origin of IntersendSdkClient.allowedOrigins) {
+      window.parent.postMessage(
+        { type: 'INTERSEND_CONNECT_REQUEST', requestId: connectRequestId },
+        origin,
+      );
+    }
 
     // Wait for connection response
     IntersendSdkClient.intersendInfo = await new Promise((resolve) => {
       const timeout = setTimeout(() => resolve(undefined), 1000);
       
       const handler = (event: MessageEvent) => {
-        if (event.data.type === 'INTERSEND_CONNECT_RESPONSE') {
-          clearTimeout(timeout);
-          window.removeEventListener('message', handler);
-          resolve(event.data.payload);
+        // Only trust a connect response from an allowed origin that echoes the
+        // id we just issued.
+        if (!IntersendSdkClient.isAllowedOrigin(event.origin)) {
+          return;
         }
+        if (event.data?.type !== 'INTERSEND_CONNECT_RESPONSE') {
+          return;
+        }
+        if (event.data?.requestId !== connectRequestId) {
+          return;
+        }
+
+        clearTimeout(timeout);
+        window.removeEventListener('message', handler);
+        IntersendSdkClient.walletOrigin = event.origin;
+        resolve(event.data.payload);
       };
 
       window.addEventListener('message', handler);
@@ -122,7 +188,16 @@ export class IntersendSdkClient {
   };
 
   private static handleMessage = (event: MessageEvent) => {
-    const { type, payload, requestId } = event.data;
+    // Reject any message that is not from the wallet host verified during the
+    // connect handshake.
+    if (
+      !IntersendSdkClient.walletOrigin ||
+      event.origin !== IntersendSdkClient.walletOrigin
+    ) {
+      return;
+    }
+
+    const { type, payload, requestId } = event.data ?? {};
     
     switch (type) {
       case 'TRANSACTION_RESPONSE':
