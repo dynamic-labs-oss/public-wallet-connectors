@@ -171,7 +171,45 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
   }
 
   override async getConnectedAccounts(): Promise<string[]> {
-    return MetaMaskSolanaSdkClient.getAccounts();
+    // After a page reload the SDK singleton is cleared but the MetaMask
+    // extension may still hold the session. Re-initialize so the SDK can
+    // restore accounts from the wallet-standard provider.
+    if (!MetaMaskSolanaSdkClient.isInitialized) {
+      try {
+        await this.init();
+      } catch {
+        // init failed — fall through to check below
+      }
+    }
+
+    const accounts = MetaMaskSolanaSdkClient.getAccounts();
+    if (accounts.length) {
+      return accounts;
+    }
+
+    // The SDK re-initialized but the wallet-standard wallet may not have
+    // restored accounts yet. Attempt a silent connect to recover them.
+    const wallet = MetaMaskSolanaSdkClient.getWallet();
+    if (wallet) {
+      try {
+        const connectFn = wallet.features['standard:connect']?.['connect'] as
+          | ((input: {
+              silent: boolean;
+            }) => Promise<{ accounts: readonly { address: string }[] }>)
+          | undefined;
+
+        if (connectFn) {
+          const result = await connectFn({ silent: true });
+          if (result.accounts.length) {
+            return result.accounts.map((a) => a.address);
+          }
+        }
+      } catch {
+        // silent connect not supported or failed
+      }
+    }
+
+    return [];
   }
 
   override async endSession(): Promise<void> {

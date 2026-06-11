@@ -166,11 +166,44 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   }
 
   override async getConnectedAccounts(): Promise<string[]> {
-    try {
-      return MetaMaskSdkClient.getInstance().accounts ?? [];
-    } catch {
-      return [];
+    // After a page reload, the SDK singleton is cleared but the MetaMask
+    // extension still holds the session. Re-initialize the SDK so it can
+    // restore accounts from the extension's persisted state.
+    if (!MetaMaskSdkClient.isInitialized) {
+      try {
+        await this.init();
+      } catch {
+        // init failed — fall through to provider check below
+      }
     }
+
+    try {
+      const accounts = MetaMaskSdkClient.getInstance().accounts;
+      if (accounts?.length) {
+        return accounts;
+      }
+    } catch {
+      // SDK not available
+    }
+
+    // Fall back to checking the injected provider directly via eth_accounts.
+    // This handles the case where the extension has the session but the SDK
+    // hasn't restored it into its in-memory state yet.
+    const provider = this.ethProviderHelper?.getInstalledProvider();
+    if (provider) {
+      try {
+        const accounts = (await provider.request({
+          method: 'eth_accounts',
+        })) as string[];
+        if (Array.isArray(accounts) && accounts.length) {
+          return accounts;
+        }
+      } catch {
+        // provider not available or errored
+      }
+    }
+
+    return [];
   }
 
   override async endSession(): Promise<void> {
