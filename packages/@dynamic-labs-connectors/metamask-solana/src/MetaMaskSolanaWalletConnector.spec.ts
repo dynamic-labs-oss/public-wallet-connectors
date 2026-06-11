@@ -463,7 +463,8 @@ describe('MetaMaskSolanaWalletConnector', () => {
   });
 
   describe('getConnectedAccounts', () => {
-    it('should return accounts from SDK', async () => {
+    it('should return accounts from SDK when initialized', async () => {
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
       (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([
         'SoLaNa1234',
         'SoLaNa5678',
@@ -474,8 +475,89 @@ describe('MetaMaskSolanaWalletConnector', () => {
       expect(accounts).toEqual(['SoLaNa1234', 'SoLaNa5678']);
     });
 
-    it('should return empty array if no accounts', async () => {
+    it('should initialize SDK if not already initialized', async () => {
+      (MetaMaskSolanaSdkClient.isInitialized as any) = false;
+      (MetaMaskSolanaSdkClient.init as jest.Mock).mockImplementation(
+        async () => {
+          (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+        },
+      );
+      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([
+        'SoLaNaAbc',
+      ]);
+
+      const accounts = await connector.getConnectedAccounts();
+
+      expect(MetaMaskSolanaSdkClient.init).toHaveBeenCalled();
+      expect(accounts).toEqual(['SoLaNaAbc']);
+    });
+
+    it('should attempt silent connect if SDK has no accounts after init', async () => {
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
       (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([]);
+
+      const mockConnectFn = jest.fn().mockResolvedValue({
+        accounts: [{ address: 'SoLaNaSilent' }],
+      });
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue({
+        features: {
+          'standard:connect': { connect: mockConnectFn },
+        },
+      });
+
+      const accounts = await connector.getConnectedAccounts();
+
+      expect(mockConnectFn).toHaveBeenCalledWith({ silent: true });
+      expect(accounts).toEqual(['SoLaNaSilent']);
+    });
+
+    it('should return empty array if SDK has no accounts and no wallet', async () => {
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([]);
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(null);
+
+      const accounts = await connector.getConnectedAccounts();
+
+      expect(accounts).toEqual([]);
+    });
+
+    it('should return empty array if init fails and no wallet available', async () => {
+      (MetaMaskSolanaSdkClient.isInitialized as any) = false;
+      (MetaMaskSolanaSdkClient.init as jest.Mock).mockRejectedValue(
+        new Error('init failed'),
+      );
+      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([]);
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(null);
+
+      const accounts = await connector.getConnectedAccounts();
+
+      expect(accounts).toEqual([]);
+    });
+
+    it('should return empty array if silent connect fails', async () => {
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([]);
+
+      const mockConnectFn = jest
+        .fn()
+        .mockRejectedValue(new Error('silent connect failed'));
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue({
+        features: {
+          'standard:connect': { connect: mockConnectFn },
+        },
+      });
+
+      const accounts = await connector.getConnectedAccounts();
+
+      expect(accounts).toEqual([]);
+    });
+
+    it('should return empty array if wallet has no standard:connect feature', async () => {
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+      (MetaMaskSolanaSdkClient.getAccounts as jest.Mock).mockReturnValue([]);
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue({
+        features: {},
+      });
 
       const accounts = await connector.getConnectedAccounts();
 
