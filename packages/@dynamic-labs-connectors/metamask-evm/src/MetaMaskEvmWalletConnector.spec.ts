@@ -542,15 +542,85 @@ describe('MetaMaskEvmWalletConnector', () => {
 
   describe('getConnectedAccounts', () => {
     it('should return accounts from SDK instance', async () => {
+      (MetaMaskSdkClient.isInitialized as any) = true;
       mockSdk.accounts = ['0x123', '0x456'];
 
       const accounts = await connector.getConnectedAccounts();
       expect(accounts).toEqual(['0x123', '0x456']);
     });
 
-    it('should return empty array if SDK not initialized', async () => {
+    it('should initialize SDK if not already initialized', async () => {
+      (MetaMaskSdkClient.isInitialized as any) = false;
+      (MetaMaskSdkClient.init as jest.Mock).mockImplementation(async () => {
+        (MetaMaskSdkClient.isInitialized as any) = true;
+      });
+      mockSdk.accounts = ['0xabc'];
+
+      const accounts = await connector.getConnectedAccounts();
+      expect(MetaMaskSdkClient.init).toHaveBeenCalled();
+      expect(accounts).toEqual(['0xabc']);
+    });
+
+    it('should fall back to injected provider if SDK has no accounts after init', async () => {
+      (MetaMaskSdkClient.isInitialized as any) = true;
+      mockSdk.accounts = [];
+
+      const mockProvider = {
+        request: jest.fn().mockResolvedValue(['0xinjected']),
+      };
+      Object.defineProperty(connector, 'ethProviderHelper', {
+        value: { getInstalledProvider: () => mockProvider },
+        writable: true,
+      });
+
+      const accounts = await connector.getConnectedAccounts();
+      expect(mockProvider.request).toHaveBeenCalledWith({
+        method: 'eth_accounts',
+      });
+      expect(accounts).toEqual(['0xinjected']);
+    });
+
+    it('should return empty array if SDK has no accounts and no injected provider', async () => {
+      (MetaMaskSdkClient.isInitialized as any) = true;
+      mockSdk.accounts = [];
+
+      Object.defineProperty(connector, 'ethProviderHelper', {
+        value: { getInstalledProvider: () => undefined },
+        writable: true,
+      });
+
+      const accounts = await connector.getConnectedAccounts();
+      expect(accounts).toEqual([]);
+    });
+
+    it('should return empty array if SDK init fails and no injected provider', async () => {
+      (MetaMaskSdkClient.isInitialized as any) = false;
+      (MetaMaskSdkClient.init as jest.Mock).mockRejectedValue(
+        new Error('init failed'),
+      );
       (MetaMaskSdkClient.getInstance as jest.Mock).mockImplementation(() => {
         throw new Error('Not initialized');
+      });
+
+      Object.defineProperty(connector, 'ethProviderHelper', {
+        value: undefined,
+        writable: true,
+      });
+
+      const accounts = await connector.getConnectedAccounts();
+      expect(accounts).toEqual([]);
+    });
+
+    it('should return empty array if injected provider request fails', async () => {
+      (MetaMaskSdkClient.isInitialized as any) = true;
+      mockSdk.accounts = [];
+
+      const mockProvider = {
+        request: jest.fn().mockRejectedValue(new Error('provider error')),
+      };
+      Object.defineProperty(connector, 'ethProviderHelper', {
+        value: { getInstalledProvider: () => mockProvider },
+        writable: true,
       });
 
       const accounts = await connector.getConnectedAccounts();
