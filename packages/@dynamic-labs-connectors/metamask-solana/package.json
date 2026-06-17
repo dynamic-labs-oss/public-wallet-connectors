@@ -28,5 +28,9 @@
     "@dynamic-labs/solana-core": ">=4.31.2",
     "@dynamic-labs/wallet-connector-core": ">=4.31.2",
     "@solana/web3.js": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@dynamic-labs/solana-core": "^4.88.7",
+    "@dynamic-labs/wallet-connector-core": "^4.88.7"
   }
 }

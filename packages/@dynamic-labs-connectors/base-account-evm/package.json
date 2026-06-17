@@ -29,8 +29,8 @@
     "viem": "^2.21.55"
   },
   "devDependencies": {
-    "@dynamic-labs/ethereum-core": "^4.25.7",
-    "@dynamic-labs/wallet-connector-core": "^4.25.7",
-    "@dynamic-labs/utils": "^4.25.7"
+    "@dynamic-labs/ethereum-core": "^4.88.7",
+    "@dynamic-labs/wallet-connector-core": "^4.88.7",
+    "@dynamic-labs/utils": "^4.88.7"
   }
 }
