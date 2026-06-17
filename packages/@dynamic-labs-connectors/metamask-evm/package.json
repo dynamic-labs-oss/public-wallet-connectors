@@ -24,11 +24,6 @@
     "@metamask/connect-evm": "1.3.0"
   },
   "peerDependencies": {
-    "@dynamic-labs/ethereum": ">=4.31.2",
-    "@dynamic-labs/ethereum-core": ">=4.31.2",
-    "@dynamic-labs/wallet-connector-core": ">=4.31.2"
-  },
-  "devDependencies": {
     "@dynamic-labs/ethereum": "^4.88.7",
     "@dynamic-labs/ethereum-core": "^4.88.7",
     "@dynamic-labs/wallet-connector-core": "^4.88.7"
