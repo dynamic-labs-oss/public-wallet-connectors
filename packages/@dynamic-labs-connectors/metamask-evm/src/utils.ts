@@ -24,6 +24,9 @@ export type HexChainId = `0x${string}`;
  */
 export function toNumericChainId(chainId: number | string): number {
   if (typeof chainId === 'number') return chainId;
+  if (chainId.startsWith('eip155:')) {
+    return parseInt(chainId.slice('eip155:'.length), 10);
+  }
   if (chainId.startsWith('0x')) return parseInt(chainId, 16);
   return parseInt(chainId, 10);
 }
