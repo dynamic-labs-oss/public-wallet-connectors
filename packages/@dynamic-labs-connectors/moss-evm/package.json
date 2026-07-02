@@ -1,0 +1,32 @@
+{
+  "name": "@dynamic-labs-connectors/moss-evm",
+  "version": "4.6.9",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dynamic-labs-oss/public-wallet-connectors.git",
+    "directory": "packages/@dynamic-labs-connectors/moss-evm"
+  },
+  "type": "module",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "private": false,
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "require": "./src/index.js",
+      "types": "./src/index.d.ts"
+    }
+  },
+  "dependencies": {
+    "@megaeth-labs/wallet-sdk": ">=0.1.19 <1.0.0"
+  },
+  "peerDependencies": {
+    "@dynamic-labs/ethereum-core": "^4.31.2",
+    "@dynamic-labs/ethereum": "^4.31.2",
+    "@dynamic-labs/wallet-connector-core": "^4.31.2",
+    "viem": "^2.21.55"
+  }
+}

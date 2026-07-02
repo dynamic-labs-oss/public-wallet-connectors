@@ -32,6 +32,9 @@
       "@dynamic-labs-connectors/intersend-evm": [
         "packages/@dynamic-labs-connectors/intersend-evm/src/index.ts"
       ],
+      "@dynamic-labs-connectors/moss-evm": [
+        "packages/@dynamic-labs-connectors/moss-evm/src/index.ts"
+      ],
       "@dynamic-labs-connectors/safe-evm": [
         "packages/@dynamic-labs-connectors/safe-evm/src/index.ts"
       ],
