@@ -21,6 +21,7 @@
     }
   },
   "dependencies": {
+    "@dynamic-labs/utils": "^4.88.7",
     "@metamask/connect-solana": "2.1.0",
     "bs58": "^6.0.0"
   },

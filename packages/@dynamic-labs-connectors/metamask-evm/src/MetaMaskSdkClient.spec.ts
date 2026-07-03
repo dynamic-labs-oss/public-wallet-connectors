@@ -4,6 +4,7 @@ import {
 } from './MetaMaskSdkClient.js';
 
 const mockCreateEVMClient = jest.fn();
+const mockOpenURL = jest.fn();
 
 jest.mock('@metamask/connect-evm', () => ({
   createEVMClient: (...args: unknown[]) => mockCreateEVMClient(...args),
@@ -16,11 +17,18 @@ jest.mock('@dynamic-labs/wallet-connector-core', () => ({
   },
 }));
 
-const mockWindowOpen = jest.fn();
+jest.mock('@dynamic-labs/utils', () => ({
+  PlatformService: {
+    get openURL() {
+      return mockOpenURL;
+    },
+  },
+}));
+
 const originalWindow = global.window;
 beforeAll(() => {
   // @ts-expect-error - mocking window for tests
-  global.window = { location: { origin: 'https://test.com' }, open: mockWindowOpen };
+  global.window = { location: { origin: 'https://test.com' } };
 });
 afterAll(() => {
   global.window = originalWindow;
@@ -496,7 +504,7 @@ describe('MetaMaskSdkClient', () => {
       );
     });
 
-    it('preferredOpenLink should call window.open', async () => {
+    it('preferredOpenLink should call PlatformService.openURL', async () => {
       let capturedMobile: any;
       mockCreateEVMClient.mockImplementation((options) => {
         capturedMobile = options.mobile;
@@ -506,7 +514,7 @@ describe('MetaMaskSdkClient', () => {
       await MetaMaskSdkClient.init(mockConfig);
 
       capturedMobile.preferredOpenLink('metamask://connect?test');
-      expect(mockWindowOpen).toHaveBeenCalledWith('metamask://connect?test', '_blank');
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?test', 'blank');
     });
   });
 
@@ -573,7 +581,7 @@ describe('MetaMaskSdkClient', () => {
   });
 
   describe('retryDeepLink', () => {
-    it('should call window.open with the connect URI', async () => {
+    it('should call PlatformService.openURL with the connect URI', async () => {
       let capturedEventHandlers: any;
       mockCreateEVMClient.mockImplementation((options) => {
         capturedEventHandlers = options.eventHandlers;
@@ -583,15 +591,15 @@ describe('MetaMaskSdkClient', () => {
       await MetaMaskSdkClient.init(mockConfig);
 
       capturedEventHandlers.displayUri('metamask://connect?session=abc');
-      mockWindowOpen.mockClear();
+      mockOpenURL.mockClear();
 
       MetaMaskSdkClient.retryDeepLink();
-      expect(mockWindowOpen).toHaveBeenCalledWith('metamask://connect?session=abc', '_blank');
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?session=abc', 'blank');
     });
 
     it('should do nothing when no connect URI is stored', () => {
       MetaMaskSdkClient.retryDeepLink();
-      expect(mockWindowOpen).not.toHaveBeenCalled();
+      expect(mockOpenURL).not.toHaveBeenCalled();
     });
   });
 });

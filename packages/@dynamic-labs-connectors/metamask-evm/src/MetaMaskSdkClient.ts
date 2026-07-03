@@ -1,5 +1,6 @@
 import type { MetamaskConnectEVM } from '@metamask/connect-evm';
 import { logger } from '@dynamic-labs/wallet-connector-core';
+import { PlatformService } from '@dynamic-labs/utils';
 
 import {
   buildSupportedNetworks,
@@ -14,12 +15,12 @@ export interface MetaMaskSdkClientConfig {
 }
 
 /**
- * Opens a deep link in the browser.
+ * Opens a deep link using the platform service.
  * Used as the mobile.preferredOpenLink callback for the MetaMask SDK
  * to handle deep links to the MetaMask Mobile app.
  */
 const openDeepLink = (link: string): void => {
-  window.open(link, '_blank');
+  PlatformService.openURL(link, 'blank');
 };
 
 /**

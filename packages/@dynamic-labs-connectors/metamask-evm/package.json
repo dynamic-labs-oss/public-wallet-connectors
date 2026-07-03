@@ -21,6 +21,7 @@
     }
   },
   "dependencies": {
+    "@dynamic-labs/utils": "^4.88.7",
     "@metamask/connect-evm": "2.1.0"
   },
   "peerDependencies": {
