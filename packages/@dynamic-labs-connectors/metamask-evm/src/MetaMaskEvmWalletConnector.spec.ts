@@ -676,6 +676,18 @@ describe('MetaMaskEvmWalletConnector', () => {
     });
   });
 
+  describe('retryDeeplinkConnection', () => {
+    it('should call MetaMaskSdkClient.retryDeepLink', () => {
+      (MetaMaskSdkClient.retryDeepLink as jest.Mock).mockImplementation(
+        jest.fn(),
+      );
+
+      connector.retryDeeplinkConnection();
+
+      expect(MetaMaskSdkClient.retryDeepLink).toHaveBeenCalled();
+    });
+  });
+
   describe('getSupportedNetworks', () => {
     it('should return chain IDs as decimal strings', async () => {
       Object.defineProperty(connector, 'evmNetworks', {

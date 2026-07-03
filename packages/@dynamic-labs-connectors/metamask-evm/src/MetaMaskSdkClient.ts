@@ -14,6 +14,15 @@ export interface MetaMaskSdkClientConfig {
 }
 
 /**
+ * Opens a deep link in the browser.
+ * Used as the mobile.preferredOpenLink callback for the MetaMask SDK
+ * to handle deep links to the MetaMask Mobile app.
+ */
+const openDeepLink = (link: string): void => {
+  window.open(link, '_blank');
+};
+
+/**
  * Thin singleton wrapper around MetaMask Connect EVM SDK.
  * Handles SSR-safe dynamic import, init dedup, connect dedup,
  * and display_uri listener management. All state reads go
@@ -28,6 +37,7 @@ export class MetaMaskSdkClient {
   }> | null = null;
   private static displayUriListeners = new Set<(uri: string) => void>();
   private static latestDisplayUri: string | null = null;
+  private static connectUri: string | null = null;
 
   static isInitialized = false;
 
@@ -71,18 +81,27 @@ export class MetaMaskSdkClient {
       },
       skipAutoAnnounce: true,
       ui: { headless: true, preferExtension: true },
+      mobile: {
+        preferredOpenLink: openDeepLink,
+        useDeeplink: true,
+      },
       eventHandlers: {
         displayUri: (uri: string) => {
           MetaMaskSdkClient.latestDisplayUri = uri;
+          if (uri.includes('://connect')) {
+            MetaMaskSdkClient.connectUri = uri;
+          }
           for (const listener of MetaMaskSdkClient.displayUriListeners) {
             listener(uri);
           }
         },
         connect: () => {
           MetaMaskSdkClient.latestDisplayUri = null;
+          MetaMaskSdkClient.connectUri = null;
         },
         disconnect: () => {
           MetaMaskSdkClient.latestDisplayUri = null;
+          MetaMaskSdkClient.connectUri = null;
         },
       },
       debug: false,
@@ -110,6 +129,19 @@ export class MetaMaskSdkClient {
 
   static getDisplayUri = (): string | undefined => {
     return MetaMaskSdkClient.latestDisplayUri ?? undefined;
+  };
+
+  /** Returns the last connect deep link URI for retry purposes. */
+  static getConnectUri = (): string | undefined => {
+    return MetaMaskSdkClient.connectUri ?? undefined;
+  };
+
+  /** Re-opens the last connect deep link (for mobile retry). */
+  static retryDeepLink = (): void => {
+    const uri = MetaMaskSdkClient.connectUri;
+    if (uri) {
+      openDeepLink(uri);
+    }
   };
 
   /** Subscribe to display_uri events. Returns an unsubscribe function. */
@@ -186,5 +218,6 @@ export class MetaMaskSdkClient {
     MetaMaskSdkClient.connectPromise = null;
     MetaMaskSdkClient.displayUriListeners.clear();
     MetaMaskSdkClient.latestDisplayUri = null;
+    MetaMaskSdkClient.connectUri = null;
   };
 }
