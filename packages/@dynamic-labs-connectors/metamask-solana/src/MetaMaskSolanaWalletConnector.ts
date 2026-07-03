@@ -213,6 +213,11 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
   }
 
   override async endSession(): Promise<void> {
+    // Tear down event listeners BEFORE disconnecting to prevent the SDK's
+    // 'disconnect' event from propagating back to the Dynamic multi-wallet
+    // manager as an unexpected external disconnect (which would log out all
+    // wallets in connect-only mode).
+    this.teardownEventListeners?.();
     this.signer = undefined;
     await MetaMaskSolanaSdkClient.disconnect();
   }

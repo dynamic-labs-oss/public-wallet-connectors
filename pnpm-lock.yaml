@@ -299,8 +299,8 @@ importers:
         specifier: ^4.88.7
         version: 4.89.0(@dynamic-labs-wallet/primitives@1.0.16)(bufferutil@4.0.9)(react-dom@19.2.3(react@19.2.3))(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10))(react@19.2.3)(utf-8-validate@5.0.10)
       '@metamask/connect-evm':
-        specifier: 1.3.0
-        version: 1.3.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: 2.1.0
+        version: 2.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
 
   packages/@dynamic-labs-connectors/metamask-solana:
     dependencies:
@@ -311,8 +311,8 @@ importers:
         specifier: ^4.88.7
         version: 4.89.0(@dynamic-labs-wallet/primitives@1.0.16)(bufferutil@4.0.9)(react-dom@19.2.3(react@19.2.3))(react-native@0.82.0(@babel/core@7.28.4)(@types/react@19.2.2)(bufferutil@4.0.9)(react@19.2.3)(utf-8-validate@5.0.10))(react@19.2.3)(utf-8-validate@5.0.10)
       '@metamask/connect-solana':
-        specifier: 1.1.0
-        version: 1.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: 2.1.0
+        version: 2.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@solana/web3.js':
         specifier: '>=1.0.0'
         version: 1.98.1(bufferutil@4.0.9)(typescript@5.5.4)(utf-8-validate@5.0.10)
@@ -2184,26 +2184,21 @@ packages:
   '@lit/reactive-element@2.1.1':
     resolution: {integrity: sha512-N+dm5PAYdQ8e6UlywyyrgI2t++wFGXfHx+dSJ1oBrg6FAxUj40jId++EaRm80MKX5JnlH1sBsyZ5h0bcZKemCg==}
 
-  '@metamask/analytics@0.4.0':
-    resolution: {integrity: sha512-QKjVu8RsbjeSfXXhRLvOVdWJ0jUrVdXFwa4I1VyoI7LapWS6T0apTSjM8nLJKN1NADbpSYm7ctyuTyaHlG/0yA==}
-    engines: {node: '>=20.19.0'}
-
   '@metamask/analytics@0.5.0':
     resolution: {integrity: sha512-BXY7frsjCg1eJcxj7DAqFXyrECYspCVC8+inKfTC/IdW5i4wrMFei02VthnRvLjXAUNZ4c/i4NZvL9DT6HxOnw==}
+    engines: {node: '>=20.19.0'}
+
+  '@metamask/analytics@0.6.0':
+    resolution: {integrity: sha512-L250lV3PANTcKqhZkmRV1Obkyddm6JDQvDBuUVAi+7TmPdOVdpavWNXyEh7ErscjwG0z2wiF9Ne0ihK/nCdX0w==}
     engines: {node: '>=20.19.0'}
 
   '@metamask/connect-evm@1.3.0':
     resolution: {integrity: sha512-3H9j58XSoAlbHqkQpQx8uLDvJhYj0bbVEECrcyVti6oJjvuIZnXpVKak9IxNwhNglb/2wddqm9Y+718/oMbvdw==}
     engines: {node: '>=20.19.0'}
 
-  '@metamask/connect-multichain@0.13.0':
-    resolution: {integrity: sha512-nXIp/tzgoMQ4CzH79EoHP9Wtpxk5h3T+i7ESdDuwLxYhnuQEF2Yc5eSmUkhns/GUDTyRzT33unN6c2GVer5VMw==}
+  '@metamask/connect-evm@2.1.0':
+    resolution: {integrity: sha512-u0eYWPGWOk9w7ne+dAynO0saN2mCXfkt1QLGo829kiDLO0YGuFSNXWpRxnIygm6j9s9NOVLkL7+tkyZCR755Jw==}
     engines: {node: '>=20.19.0'}
-    peerDependencies:
-      '@react-native-async-storage/async-storage': ^1.23
-    peerDependenciesMeta:
-      '@react-native-async-storage/async-storage':
-        optional: true
 
   '@metamask/connect-multichain@0.14.0':
     resolution: {integrity: sha512-G1bOsOBF7Xy269fbiD+zdTX5wv2sAKEICUafOj51TK4uRGIo8vHWuGdqP1sxfrutCRo3SmqjF4mAI9n8UijuFQ==}
@@ -2214,8 +2209,17 @@ packages:
       '@react-native-async-storage/async-storage':
         optional: true
 
-  '@metamask/connect-solana@1.1.0':
-    resolution: {integrity: sha512-4g32yw2IdihqDyGtoMftFpoSNCabeNIc/laHbp2eYrmMFJzvkG1+w4bS/b/Tf51EqiAANCjj4LHbMN3Gubd9UQ==}
+  '@metamask/connect-multichain@1.1.0':
+    resolution: {integrity: sha512-PywCTfcSkLHTkEYhnrQbQPv/6laXTPKLmVlJnCAkqFon0jxX6ETCthZcA30fwUQhiOONmG5/MZano3imH+K5dA==}
+    engines: {node: '>=20.19.0'}
+    peerDependencies:
+      '@react-native-async-storage/async-storage': ^1.23
+    peerDependenciesMeta:
+      '@react-native-async-storage/async-storage':
+        optional: true
+
+  '@metamask/connect-solana@2.1.0':
+    resolution: {integrity: sha512-cse70fsY0ObINGytj2bskx25Xb6pOKJAGBO/PW1jAMEFI+xijlHznGo1vsON14dUKJKyiZyCoTSxrA40NlNB8w==}
     engines: {node: '>=20.19.0'}
 
   '@metamask/json-rpc-engine@8.0.2':
@@ -7658,6 +7662,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.8.4:
+    resolution: {integrity: sha512-rUCObTnP32Q08R2uuIrt7r9PlEonuTmtuXYcW6s5kjdlj3xbnwe+21yXptAUYcMAABLkYYTtnmzb3w3EDZfueA==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   send@0.19.0:
     resolution: {integrity: sha512-dW41u5VfLXu8SJh5bwRmyYUbAoSB3c9uQh6L8h/KtsFREPWpbX1lrljJo186Jc4nmci/sGUZ9a0a0J2zgfq2hw==}
     engines: {node: '>= 0.8.0'}
@@ -11621,11 +11630,11 @@ snapshots:
     dependencies:
       '@lit-labs/ssr-dom-shim': 1.4.0
 
-  '@metamask/analytics@0.4.0':
+  '@metamask/analytics@0.5.0':
     dependencies:
       openapi-fetch: 0.13.8
 
-  '@metamask/analytics@0.5.0':
+  '@metamask/analytics@0.6.0':
     dependencies:
       openapi-fetch: 0.13.8
 
@@ -11641,26 +11650,14 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@metamask/connect-multichain@0.13.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+  '@metamask/connect-evm@2.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
-      '@metamask/analytics': 0.4.0
-      '@metamask/mobile-wallet-protocol-core': 0.4.0
-      '@metamask/mobile-wallet-protocol-dapp-client': 0.3.0
-      '@metamask/multichain-api-client': 0.10.1
-      '@metamask/multichain-ui': 0.4.1
-      '@metamask/onboarding': 1.0.1
-      '@metamask/rpc-errors': 7.0.3
+      '@metamask/analytics': 0.6.0
+      '@metamask/connect-multichain': 1.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@metamask/utils': 11.9.0
-      '@paulmillr/qr': 0.2.1
-      bowser: 2.12.1
-      buffer: 6.0.3
-      cross-fetch: 4.1.0
-      eciesjs: 0.4.17
-      eventemitter3: 5.0.1
-      pako: 2.1.0
-      uuid: 11.1.1
-      ws: 8.20.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      semver: 7.8.4
     transitivePeerDependencies:
+      - '@react-native-async-storage/async-storage'
       - bufferutil
       - encoding
       - supports-color
@@ -11691,12 +11688,38 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@metamask/connect-solana@1.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+  '@metamask/connect-multichain@1.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
-      '@metamask/connect-multichain': 0.13.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@metamask/analytics': 0.6.0
+      '@metamask/mobile-wallet-protocol-core': 0.4.0
+      '@metamask/mobile-wallet-protocol-dapp-client': 0.3.0
+      '@metamask/multichain-api-client': 0.10.1
+      '@metamask/multichain-ui': 0.4.1
+      '@metamask/onboarding': 1.0.1
+      '@metamask/rpc-errors': 7.0.3
+      '@metamask/utils': 11.9.0
+      '@paulmillr/qr': 0.2.1
+      bowser: 2.12.1
+      buffer: 6.0.3
+      cross-fetch: 4.1.0
+      eciesjs: 0.4.17
+      eventemitter3: 5.0.1
+      pako: 2.1.0
+      uuid: 11.1.1
+      ws: 8.20.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - supports-color
+      - utf-8-validate
+
+  '@metamask/connect-solana@2.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+    dependencies:
+      '@metamask/connect-multichain': 1.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@metamask/solana-wallet-standard': 0.6.0
       '@wallet-standard/app': 1.1.0
       '@wallet-standard/base': 1.1.0
+      semver: 7.8.4
     transitivePeerDependencies:
       - '@react-native-async-storage/async-storage'
       - bufferutil
@@ -11903,7 +11926,7 @@ snapshots:
       debug: 4.4.3
       lodash: 4.18.1
       pony-cause: 2.1.11
-      semver: 7.7.3
+      semver: 7.8.4
       uuid: 9.0.1
     transitivePeerDependencies:
       - supports-color
@@ -11931,7 +11954,7 @@ snapshots:
       '@types/debug': 4.1.12
       debug: 4.4.3
       pony-cause: 2.1.11
-      semver: 7.7.3
+      semver: 7.8.4
       uuid: 9.0.1
     transitivePeerDependencies:
       - supports-color
@@ -14389,7 +14412,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/tsconfig-utils': 8.43.0(typescript@5.5.4)
       '@typescript-eslint/types': 8.43.0
-      debug: 4.4.1
+      debug: 4.4.3
       typescript: 5.5.4
     transitivePeerDependencies:
       - supports-color
@@ -14408,7 +14431,7 @@ snapshots:
       '@typescript-eslint/types': 8.43.0
       '@typescript-eslint/typescript-estree': 8.43.0(typescript@5.5.4)
       '@typescript-eslint/utils': 8.43.0(eslint@9.35.0(jiti@2.6.1))(typescript@5.5.4)
-      debug: 4.4.1
+      debug: 4.4.3
       eslint: 9.35.0(jiti@2.6.1)
       ts-api-utils: 2.1.0(typescript@5.5.4)
       typescript: 5.5.4
@@ -20272,6 +20295,8 @@ snapshots:
   semver@7.7.2: {}
 
   semver@7.7.3: {}
+
+  semver@7.8.4: {}
 
   send@0.19.0:
     dependencies:

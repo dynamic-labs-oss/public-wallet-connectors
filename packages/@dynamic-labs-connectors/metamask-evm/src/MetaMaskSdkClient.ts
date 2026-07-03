@@ -69,6 +69,7 @@ export class MetaMaskSdkClient {
       api: {
         supportedNetworks: supportedNetworks as Record<HexChainId, string>,
       },
+      skipAutoAnnounce: true,
       ui: { headless: true, preferExtension: true },
       eventHandlers: {
         displayUri: (uri: string) => {

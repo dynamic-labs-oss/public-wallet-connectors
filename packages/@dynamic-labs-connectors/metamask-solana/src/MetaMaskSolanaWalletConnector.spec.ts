@@ -593,5 +593,31 @@ describe('MetaMaskSolanaWalletConnector', () => {
       const signer = await connector.getSigner();
       expect(signer).toBeUndefined();
     });
+
+    it('should tear down event listeners before disconnecting', async () => {
+      const mockUnsubscribe = jest.fn();
+      const mockOnFn = jest.fn().mockReturnValue(mockUnsubscribe);
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue({
+        features: { 'standard:events': { on: mockOnFn } },
+        accounts: [],
+      });
+
+      connector.setupEventListeners();
+
+      const callOrder: string[] = [];
+      mockUnsubscribe.mockImplementation(() => {
+        callOrder.push('teardown');
+      });
+      (MetaMaskSolanaSdkClient.disconnect as jest.Mock).mockImplementation(
+        async () => {
+          callOrder.push('disconnect');
+        },
+      );
+
+      await connector.endSession();
+
+      expect(callOrder[0]).toBe('teardown');
+      expect(callOrder[callOrder.length - 1]).toBe('disconnect');
+    });
   });
 });

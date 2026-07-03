@@ -207,6 +207,11 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   }
 
   override async endSession(): Promise<void> {
+    // Tear down event listeners BEFORE disconnecting to prevent the SDK's
+    // 'disconnect' event from propagating back to the Dynamic multi-wallet
+    // manager as an unexpected external disconnect (which would log out all
+    // wallets in connect-only mode).
+    this.teardownEventListeners?.();
     await MetaMaskSdkClient.disconnect();
   }
 
