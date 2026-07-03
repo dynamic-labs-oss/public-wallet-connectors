@@ -1,7 +1,7 @@
 {
   "name": "root",
   "private": true,
-  "version": "4.6.9",
+  "version": "4.6.10",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "postinstall": "lefthook install",
