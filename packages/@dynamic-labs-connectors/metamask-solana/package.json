@@ -21,7 +21,7 @@
     }
   },
   "dependencies": {
-    "@metamask/connect-solana": "1.1.0",
+    "@metamask/connect-solana": "2.1.0",
     "bs58": "^6.0.0"
   },
   "peerDependencies": {

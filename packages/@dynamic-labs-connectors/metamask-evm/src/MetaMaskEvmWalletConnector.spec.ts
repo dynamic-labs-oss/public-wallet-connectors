@@ -633,6 +633,31 @@ describe('MetaMaskEvmWalletConnector', () => {
       await connector.endSession();
       expect(MetaMaskSdkClient.disconnect).toHaveBeenCalled();
     });
+
+    it('should tear down event listeners before disconnecting', async () => {
+      const mockOff = jest.fn();
+      const mockProvider = {
+        on: jest.fn(),
+        off: mockOff,
+        selectedAccount: '0x123',
+      };
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+
+      await connector.setupEventListeners();
+
+      const callOrder: string[] = [];
+      mockOff.mockImplementation(() => {
+        callOrder.push('teardown');
+      });
+      (MetaMaskSdkClient.disconnect as jest.Mock).mockImplementation(async () => {
+        callOrder.push('disconnect');
+      });
+
+      await connector.endSession();
+
+      expect(callOrder[0]).toBe('teardown');
+      expect(callOrder[callOrder.length - 1]).toBe('disconnect');
+    });
   });
 
   describe('getConnectionUri', () => {
