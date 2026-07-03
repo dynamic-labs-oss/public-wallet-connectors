@@ -34,17 +34,9 @@ jest.mock('@dynamic-labs/utils', () => ({
     get openURL() {
       return mockOpenURL;
     },
+    getOrigin: () => 'https://test.com',
   },
 }));
-
-const originalWindow = global.window;
-beforeAll(() => {
-  // @ts-expect-error - mocking window for tests
-  global.window = { location: { origin: 'https://test.com' } };
-});
-afterAll(() => {
-  global.window = originalWindow;
-});
 
 const mockWallet = {
   name: 'MetaMask Connect',

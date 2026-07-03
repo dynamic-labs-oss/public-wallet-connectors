@@ -61,8 +61,6 @@ export class MetaMaskSdkClient {
   private static doInit = async (
     config: MetaMaskSdkClientConfig,
   ): Promise<void> => {
-    if (typeof window === 'undefined') return;
-
     const supportedNetworks = buildSupportedNetworks(config.evmNetworks);
     if (Object.keys(supportedNetworks).length === 0) {
       throw new Error(
@@ -74,7 +72,7 @@ export class MetaMaskSdkClient {
     const sdk = await createEVMClient({
       dapp: {
         name: config.dappName ?? 'Dynamic',
-        url: config.dappUrl ?? window.location.origin,
+        url: config.dappUrl ?? PlatformService.getOrigin(),
       },
       analytics: { integrationType: 'dynamic' },
       api: {

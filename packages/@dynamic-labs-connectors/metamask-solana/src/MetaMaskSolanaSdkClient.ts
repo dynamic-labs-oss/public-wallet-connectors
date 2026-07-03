@@ -76,17 +76,13 @@ export class MetaMaskSolanaSdkClient {
   private static doInit = async (
     config: MetaMaskSolanaSdkClientConfig,
   ): Promise<void> => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
     try {
       const { createSolanaClient } = await import('@metamask/connect-solana');
 
       const client = await createSolanaClient({
         dapp: {
           name: config.dappName ?? 'Dynamic',
-          url: config.dappUrl ?? window.location.origin,
+          url: config.dappUrl ?? PlatformService.getOrigin(),
         },
         analytics: {
           integrationType: 'dynamic',
