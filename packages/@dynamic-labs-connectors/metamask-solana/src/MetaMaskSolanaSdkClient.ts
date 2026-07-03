@@ -1,11 +1,18 @@
 import { logger } from '@dynamic-labs/wallet-connector-core';
+import { PlatformService } from '@dynamic-labs/utils';
 
 import type { StandardWallet } from './types.js';
 
 type MultichainCore = {
   on(event: string, handler: (...args: unknown[]) => void): void;
   off(event: string, handler: (...args: unknown[]) => void): void;
-  mergeOptions(partial: { ui?: { headless?: boolean } }): void;
+  mergeOptions(partial: {
+    ui?: { headless?: boolean };
+    mobile?: {
+      preferredOpenLink?: (deeplink: string, target?: string) => void;
+      useDeeplink?: boolean;
+    };
+  }): void;
 };
 
 type SolanaClient = {
@@ -20,6 +27,15 @@ export interface MetaMaskSolanaSdkClientConfig {
 }
 
 /**
+ * Opens a deep link using the platform service.
+ * Used as the mobile.preferredOpenLink callback for the MetaMask SDK
+ * to handle deep links to the MetaMask Mobile app.
+ */
+const openDeepLink = (link: string): void => {
+  PlatformService.openURL(link, 'blank');
+};
+
+/**
  * Static singleton client for MetaMask Connect Solana SDK.
  * Wraps createSolanaClient() and exposes the wallet-standard Wallet.
  */
@@ -28,6 +44,7 @@ export class MetaMaskSolanaSdkClient {
   private static wallet: StandardWallet | null = null;
   private static multichainCore: MultichainCore | null = null;
   private static initPromise: Promise<void> | null = null;
+  private static connectUri: string | null = null;
 
   static isInitialized = false;
 
@@ -59,17 +76,13 @@ export class MetaMaskSolanaSdkClient {
   private static doInit = async (
     config: MetaMaskSolanaSdkClientConfig,
   ): Promise<void> => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
     try {
       const { createSolanaClient } = await import('@metamask/connect-solana');
 
       const client = await createSolanaClient({
         dapp: {
           name: config.dappName ?? 'Dynamic',
-          url: config.dappUrl ?? window.location.origin,
+          url: config.dappUrl ?? PlatformService.getOrigin(),
         },
         analytics: {
           integrationType: 'dynamic',
@@ -84,10 +97,22 @@ export class MetaMaskSolanaSdkClient {
         client.core as unknown as MultichainCore;
       MetaMaskSolanaSdkClient.isInitialized = true;
 
-      // Ensure headless mode so the SDK emits display_uri events
-      // instead of rendering its own QR modal. Safe to call multiple
-      // times (idempotent via nullish coalescing in mergeOptions).
-      client.core.mergeOptions({ ui: { headless: true } });
+      // Ensure headless mode and configure mobile deep link handling.
+      // Safe to call multiple times (idempotent via nullish coalescing in mergeOptions).
+      client.core.mergeOptions({
+        ui: { headless: true },
+        mobile: {
+          preferredOpenLink: openDeepLink,
+          useDeeplink: true,
+        },
+      });
+
+      // Listen for display_uri events to track the connect URI for retry
+      client.core.on('display_uri', ((uri: string) => {
+        if (uri.includes('://connect')) {
+          MetaMaskSolanaSdkClient.connectUri = uri;
+        }
+      }) as (...args: unknown[]) => void);
 
       logger.debug('[MetaMaskSolanaSdkClient] init complete');
     } catch (error) {
@@ -116,6 +141,19 @@ export class MetaMaskSolanaSdkClient {
     const handler = listener as (...args: unknown[]) => void;
     core.on('display_uri', handler);
     return () => core.off('display_uri', handler);
+  };
+
+  /** Returns the last connect deep link URI for retry purposes. */
+  static getConnectUri = (): string | undefined => {
+    return MetaMaskSolanaSdkClient.connectUri ?? undefined;
+  };
+
+  /** Re-opens the last connect deep link (for mobile retry). */
+  static retryDeepLink = (): void => {
+    const uri = MetaMaskSolanaSdkClient.connectUri;
+    if (uri) {
+      openDeepLink(uri);
+    }
   };
 
   static getAccounts = (): string[] => {
@@ -176,5 +214,6 @@ export class MetaMaskSolanaSdkClient {
     MetaMaskSolanaSdkClient.multichainCore = null;
     MetaMaskSolanaSdkClient.isInitialized = false;
     MetaMaskSolanaSdkClient.initPromise = null;
+    MetaMaskSolanaSdkClient.connectUri = null;
   };
 }

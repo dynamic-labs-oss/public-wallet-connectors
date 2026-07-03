@@ -222,6 +222,10 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
     await MetaMaskSolanaSdkClient.disconnect();
   }
 
+  override retryDeeplinkConnection(): void {
+    MetaMaskSolanaSdkClient.retryDeepLink();
+  }
+
   private buildSigner(): ISolana | undefined {
     const wallet = MetaMaskSolanaSdkClient.getWallet();
     logger.logVerboseTroubleshootingMessage('[MetaMaskSolanaWalletConnector] buildSigner', {

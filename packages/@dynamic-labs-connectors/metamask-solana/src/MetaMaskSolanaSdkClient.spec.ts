@@ -27,14 +27,16 @@ jest.mock('@dynamic-labs/wallet-connector-core', () => ({
   },
 }));
 
-const originalWindow = global.window;
-beforeAll(() => {
-  // @ts-expect-error - mocking window for tests
-  global.window = { location: { origin: 'https://test.com' } };
-});
-afterAll(() => {
-  global.window = originalWindow;
-});
+const mockOpenURL = jest.fn();
+
+jest.mock('@dynamic-labs/utils', () => ({
+  PlatformService: {
+    get openURL() {
+      return mockOpenURL;
+    },
+    getOrigin: () => 'https://test.com',
+  },
+}));
 
 const mockWallet = {
   name: 'MetaMask Connect',
@@ -93,12 +95,21 @@ describe('MetaMaskSolanaSdkClient', () => {
       expect(MetaMaskSolanaSdkClient.getWallet()).toBe(mockWallet);
     });
 
-    it('should store the core and set headless mode', async () => {
+    it('should store the core and configure headless mode with mobile options', async () => {
       await MetaMaskSolanaSdkClient.init({});
       expect(MetaMaskSolanaSdkClient.getCore()).toBe(mockCore);
       expect(mockMergeOptions).toHaveBeenCalledWith({
         ui: { headless: true },
+        mobile: {
+          preferredOpenLink: expect.any(Function),
+          useDeeplink: true,
+        },
       });
+    });
+
+    it('should register a display_uri listener on core for tracking connect URI', async () => {
+      await MetaMaskSolanaSdkClient.init({});
+      expect(mockCore.on).toHaveBeenCalledWith('display_uri', expect.any(Function));
     });
   });
 
@@ -204,6 +215,76 @@ describe('MetaMaskSolanaSdkClient', () => {
       expect(MetaMaskSolanaSdkClient.getWallet()).toBeNull();
       expect(MetaMaskSolanaSdkClient.getCore()).toBeNull();
       expect(MetaMaskSolanaSdkClient.getAccounts()).toEqual([]);
+    });
+
+    it('should clear connectUri', async () => {
+      await MetaMaskSolanaSdkClient.init({});
+
+      // Simulate the display_uri handler being called
+      const displayUriHandler = mockCore.on.mock.calls.find(
+        ([event]: [string]) => event === 'display_uri',
+      )?.[1];
+      displayUriHandler?.('metamask://connect?session=test');
+      expect(MetaMaskSolanaSdkClient.getConnectUri()).toBe('metamask://connect?session=test');
+
+      MetaMaskSolanaSdkClient.reset();
+      expect(MetaMaskSolanaSdkClient.getConnectUri()).toBeUndefined();
+    });
+  });
+
+  describe('mobile deep link support', () => {
+    it('preferredOpenLink passed to mergeOptions should call PlatformService.openURL', async () => {
+      await MetaMaskSolanaSdkClient.init({});
+
+      const mergeCall = mockMergeOptions.mock.calls[0][0];
+      mergeCall.mobile.preferredOpenLink('metamask://connect?test');
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?test', 'blank');
+    });
+  });
+
+  describe('getConnectUri', () => {
+    it('should return undefined when no connect URI has been tracked', () => {
+      expect(MetaMaskSolanaSdkClient.getConnectUri()).toBeUndefined();
+    });
+
+    it('should store URI containing ://connect from display_uri event', async () => {
+      await MetaMaskSolanaSdkClient.init({});
+
+      const displayUriHandler = mockCore.on.mock.calls.find(
+        ([event]: [string]) => event === 'display_uri',
+      )?.[1];
+      displayUriHandler?.('metamask://connect?session=abc');
+      expect(MetaMaskSolanaSdkClient.getConnectUri()).toBe('metamask://connect?session=abc');
+    });
+
+    it('should not store URI that does not contain ://connect', async () => {
+      await MetaMaskSolanaSdkClient.init({});
+
+      const displayUriHandler = mockCore.on.mock.calls.find(
+        ([event]: [string]) => event === 'display_uri',
+      )?.[1];
+      displayUriHandler?.('wc:some-qr-uri');
+      expect(MetaMaskSolanaSdkClient.getConnectUri()).toBeUndefined();
+    });
+  });
+
+  describe('retryDeepLink', () => {
+    it('should call PlatformService.openURL with the connect URI', async () => {
+      await MetaMaskSolanaSdkClient.init({});
+
+      const displayUriHandler = mockCore.on.mock.calls.find(
+        ([event]: [string]) => event === 'display_uri',
+      )?.[1];
+      displayUriHandler?.('metamask://connect?session=abc');
+      mockOpenURL.mockClear();
+
+      MetaMaskSolanaSdkClient.retryDeepLink();
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?session=abc', 'blank');
+    });
+
+    it('should do nothing when no connect URI is stored', () => {
+      MetaMaskSolanaSdkClient.retryDeepLink();
+      expect(mockOpenURL).not.toHaveBeenCalled();
     });
   });
 });

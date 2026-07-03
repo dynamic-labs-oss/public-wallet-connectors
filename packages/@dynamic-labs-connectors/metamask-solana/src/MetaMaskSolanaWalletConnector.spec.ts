@@ -620,4 +620,16 @@ describe('MetaMaskSolanaWalletConnector', () => {
       expect(callOrder[callOrder.length - 1]).toBe('disconnect');
     });
   });
+
+  describe('retryDeeplinkConnection', () => {
+    it('should call MetaMaskSolanaSdkClient.retryDeepLink', () => {
+      (MetaMaskSolanaSdkClient.retryDeepLink as jest.Mock).mockImplementation(
+        jest.fn(),
+      );
+
+      connector.retryDeeplinkConnection();
+
+      expect(MetaMaskSolanaSdkClient.retryDeepLink).toHaveBeenCalled();
+    });
+  });
 });

@@ -1,5 +1,6 @@
 import type { MetamaskConnectEVM } from '@metamask/connect-evm';
 import { logger } from '@dynamic-labs/wallet-connector-core';
+import { PlatformService } from '@dynamic-labs/utils';
 
 import {
   buildSupportedNetworks,
@@ -12,6 +13,15 @@ export interface MetaMaskSdkClientConfig {
   dappName?: string;
   dappUrl?: string;
 }
+
+/**
+ * Opens a deep link using the platform service.
+ * Used as the mobile.preferredOpenLink callback for the MetaMask SDK
+ * to handle deep links to the MetaMask Mobile app.
+ */
+const openDeepLink = (link: string): void => {
+  PlatformService.openURL(link, 'blank');
+};
 
 /**
  * Thin singleton wrapper around MetaMask Connect EVM SDK.
@@ -28,6 +38,7 @@ export class MetaMaskSdkClient {
   }> | null = null;
   private static displayUriListeners = new Set<(uri: string) => void>();
   private static latestDisplayUri: string | null = null;
+  private static connectUri: string | null = null;
 
   static isInitialized = false;
 
@@ -50,8 +61,6 @@ export class MetaMaskSdkClient {
   private static doInit = async (
     config: MetaMaskSdkClientConfig,
   ): Promise<void> => {
-    if (typeof window === 'undefined') return;
-
     const supportedNetworks = buildSupportedNetworks(config.evmNetworks);
     if (Object.keys(supportedNetworks).length === 0) {
       throw new Error(
@@ -63,7 +72,7 @@ export class MetaMaskSdkClient {
     const sdk = await createEVMClient({
       dapp: {
         name: config.dappName ?? 'Dynamic',
-        url: config.dappUrl ?? window.location.origin,
+        url: config.dappUrl ?? PlatformService.getOrigin(),
       },
       analytics: { integrationType: 'dynamic' },
       api: {
@@ -71,18 +80,27 @@ export class MetaMaskSdkClient {
       },
       skipAutoAnnounce: true,
       ui: { headless: true, preferExtension: true },
+      mobile: {
+        preferredOpenLink: openDeepLink,
+        useDeeplink: true,
+      },
       eventHandlers: {
         displayUri: (uri: string) => {
           MetaMaskSdkClient.latestDisplayUri = uri;
+          if (uri.includes('://connect')) {
+            MetaMaskSdkClient.connectUri = uri;
+          }
           for (const listener of MetaMaskSdkClient.displayUriListeners) {
             listener(uri);
           }
         },
         connect: () => {
           MetaMaskSdkClient.latestDisplayUri = null;
+          MetaMaskSdkClient.connectUri = null;
         },
         disconnect: () => {
           MetaMaskSdkClient.latestDisplayUri = null;
+          MetaMaskSdkClient.connectUri = null;
         },
       },
       debug: false,
@@ -110,6 +128,19 @@ export class MetaMaskSdkClient {
 
   static getDisplayUri = (): string | undefined => {
     return MetaMaskSdkClient.latestDisplayUri ?? undefined;
+  };
+
+  /** Returns the last connect deep link URI for retry purposes. */
+  static getConnectUri = (): string | undefined => {
+    return MetaMaskSdkClient.connectUri ?? undefined;
+  };
+
+  /** Re-opens the last connect deep link (for mobile retry). */
+  static retryDeepLink = (): void => {
+    const uri = MetaMaskSdkClient.connectUri;
+    if (uri) {
+      openDeepLink(uri);
+    }
   };
 
   /** Subscribe to display_uri events. Returns an unsubscribe function. */
@@ -186,5 +217,6 @@ export class MetaMaskSdkClient {
     MetaMaskSdkClient.connectPromise = null;
     MetaMaskSdkClient.displayUriListeners.clear();
     MetaMaskSdkClient.latestDisplayUri = null;
+    MetaMaskSdkClient.connectUri = null;
   };
 }

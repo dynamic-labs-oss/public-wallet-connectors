@@ -4,6 +4,7 @@ import {
 } from './MetaMaskSdkClient.js';
 
 const mockCreateEVMClient = jest.fn();
+const mockOpenURL = jest.fn();
 
 jest.mock('@metamask/connect-evm', () => ({
   createEVMClient: (...args: unknown[]) => mockCreateEVMClient(...args),
@@ -16,14 +17,14 @@ jest.mock('@dynamic-labs/wallet-connector-core', () => ({
   },
 }));
 
-const originalWindow = global.window;
-beforeAll(() => {
-  // @ts-expect-error - mocking window for tests
-  global.window = { location: { origin: 'https://test.com' } };
-});
-afterAll(() => {
-  global.window = originalWindow;
-});
+jest.mock('@dynamic-labs/utils', () => ({
+  PlatformService: {
+    get openURL() {
+      return mockOpenURL;
+    },
+    getOrigin: () => 'https://test.com',
+  },
+}));
 
 const mockSdk: {
   getProvider: jest.Mock;
@@ -463,6 +464,134 @@ describe('MetaMaskSdkClient', () => {
       await MetaMaskSdkClient.init(mockConfig);
       capturedEventHandlers.displayUri('wc:test-uri');
       expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('should clear connectUri', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+      capturedEventHandlers.displayUri('metamask://connect?uri=test');
+      expect(MetaMaskSdkClient.getConnectUri()).toBe('metamask://connect?uri=test');
+
+      MetaMaskSdkClient.reset();
+      expect(MetaMaskSdkClient.getConnectUri()).toBeUndefined();
+    });
+  });
+
+  describe('mobile deep link support', () => {
+    it('should pass mobile config to createEVMClient', async () => {
+      await MetaMaskSdkClient.init(mockConfig);
+
+      expect(mockCreateEVMClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mobile: {
+            preferredOpenLink: expect.any(Function),
+            useDeeplink: true,
+          },
+        }),
+      );
+    });
+
+    it('preferredOpenLink should call PlatformService.openURL', async () => {
+      let capturedMobile: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedMobile = options.mobile;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedMobile.preferredOpenLink('metamask://connect?test');
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?test', 'blank');
+    });
+  });
+
+  describe('getConnectUri', () => {
+    it('should return undefined when no connect URI has been emitted', () => {
+      expect(MetaMaskSdkClient.getConnectUri()).toBeUndefined();
+    });
+
+    it('should store URI containing ://connect', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('metamask://connect?session=abc');
+      expect(MetaMaskSdkClient.getConnectUri()).toBe('metamask://connect?session=abc');
+    });
+
+    it('should not store URI that does not contain ://connect', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('wc:some-qr-uri');
+      expect(MetaMaskSdkClient.getConnectUri()).toBeUndefined();
+    });
+
+    it('should be cleared when connect event fires', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('metamask://connect?session=abc');
+      expect(MetaMaskSdkClient.getConnectUri()).toBe('metamask://connect?session=abc');
+
+      capturedEventHandlers.connect();
+      expect(MetaMaskSdkClient.getConnectUri()).toBeUndefined();
+    });
+
+    it('should be cleared when disconnect event fires', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('metamask://connect?session=abc');
+      capturedEventHandlers.disconnect();
+      expect(MetaMaskSdkClient.getConnectUri()).toBeUndefined();
+    });
+  });
+
+  describe('retryDeepLink', () => {
+    it('should call PlatformService.openURL with the connect URI', async () => {
+      let capturedEventHandlers: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedEventHandlers = options.eventHandlers;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedEventHandlers.displayUri('metamask://connect?session=abc');
+      mockOpenURL.mockClear();
+
+      MetaMaskSdkClient.retryDeepLink();
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?session=abc', 'blank');
+    });
+
+    it('should do nothing when no connect URI is stored', () => {
+      MetaMaskSdkClient.retryDeepLink();
+      expect(mockOpenURL).not.toHaveBeenCalled();
     });
   });
 });

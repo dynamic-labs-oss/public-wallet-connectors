@@ -219,6 +219,10 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     return MetaMaskSdkClient.getDisplayUri();
   }
 
+  override retryDeeplinkConnection(): void {
+    MetaMaskSdkClient.retryDeepLink();
+  }
+
   async getSupportedNetworks(): Promise<string[]> {
     return this.evmNetworks.map((n) => String(toNumericChainId(n.chainId)));
   }
