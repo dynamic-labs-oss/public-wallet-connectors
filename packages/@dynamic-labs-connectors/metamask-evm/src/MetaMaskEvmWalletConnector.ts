@@ -15,6 +15,9 @@ import { toNumericChainId } from './utils.js';
 /**
  * MetaMask wallet connector for Dynamic.
  * Uses @metamask/connect-evm SDK with headless QR code support.
+ * When the MetaMask extension is installed on the browser, delegates
+ * to the parent injected-provider flow for native popup behavior.
+ * Falls back to the SDK protocol for QR code / mobile flows.
  */
 export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   override name = 'MetaMask';
@@ -27,8 +30,10 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
    * Dynamic uses this to decide between "install extension" and QR code views.
    */
   override isInstalledOnBrowser() {
+    if (!this.metadata?.rdns) return false;
+
     const metaMaskEip6963Provider =
-      this.ethProviderHelper?.eip6963ProviderLookup(this.metadata.rdns!);
+      this.ethProviderHelper?.eip6963ProviderLookup(this.metadata.rdns);
 
     logger.logVerboseTroubleshootingMessage('[MetaMaskEvmWalletConnector] isInstalledOnBrowser', {
       metaMaskEip6963Provider,
@@ -62,20 +67,21 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   }
 
   /**
-   * Returns the SDK's EIP-1193 provider with minimal normalization.
-   * Only intercepts eth_requestAccounts to fix the SDK's non-standard
-   * response format ({accounts, chainId} -> accounts[]).
+   * When the extension is installed, returns its injected provider directly
+   * so all RPC calls (eth_requestAccounts, etc.) go through the extension
+   * and trigger native popups. Falls back to the SDK provider for QR/mobile.
    */
   override findProvider(): IEthereum | undefined {
+    if (this.isInstalledOnBrowser()) {
+      return super.findProvider();
+    }
+
     const provider = MetaMaskSdkClient.getProvider();
 
-    logger.logVerboseTroubleshootingMessage('[MetaMaskEvmWalletConnector] findProvider', {
+    logger.logVerboseTroubleshootingMessage('[MetaMaskEvmWalletConnector] findProvider (SDK)', {
       provider,
     });
 
-    // The new SDK always has a EIP-1193 provider available even if there is no established connection.
-    // If Dynamic assumes that a provider can only be available if there is an established connection,
-    // then this check is needed. If wrong, then this check can be removed.
     if (!provider?.selectedAccount) return undefined;
 
     return {
@@ -98,6 +104,10 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   }
 
   override async setupEventListeners(): Promise<void> {
+    if (this.isInstalledOnBrowser()) {
+      return super.setupEventListeners();
+    }
+
     const provider = MetaMaskSdkClient.getProvider();
 
     if (!provider) {
@@ -121,16 +131,17 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   override async getAddress(
     opts?: GetAddressOpts,
   ): Promise<string | undefined> {
+    // When extension is installed, use the standard injected flow
+    // (eth_requestAccounts → extension popup for account selection)
+    if (this.isInstalledOnBrowser()) {
+      return super.getAddress();
+    }
+
+    // SDK flow for QR code / mobile connections
     if (!MetaMaskSdkClient.isInitialized) {
       await this.init();
     }
 
-    // Not sure if this is needed. Was added in an attempt to fix the personal sign / linking account issues.
-    // I believe if getAddress() is called without onDisplayUri, the intention is that want to return the existing selected account if
-    // there is one. If onDisplayUri is provided, we don't want to return the existing selected account if there is one, instead we want to
-    // cause a connection prompt to be shown to the user so that they can establish a new connection.
-    // Delete this block if this assumption is incorrect. I don't have a strong thoughts on this, simply leaving it here since it was here while,
-    // we were debugging with Carla.
     if (!opts?.onDisplayUri) {
       try {
         const sdk = MetaMaskSdkClient.getInstance();
@@ -145,10 +156,6 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       : undefined;
 
     try {
-      // Not sure if this is needed. Was added in an attempt to fix the personal sign / linking account issues.
-      // If onDisplayUri is provided, then I assume we want to cause a connection prompt to be shown to the user. Explicitly disconnecting would guarantee
-      // that a new connection prompt is shown to the user, but that isn't strictly required.
-      // Delete this block if the above block that returns the selectedAccount early is not needed.
       if (opts?.onDisplayUri) {
         await MetaMaskSdkClient.disconnect();
       }
@@ -166,9 +173,25 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   }
 
   override async getConnectedAccounts(): Promise<string[]> {
-    // After a page reload, the SDK singleton is cleared but the MetaMask
-    // extension still holds the session. Re-initialize the SDK so it can
-    // restore accounts from the extension's persisted state.
+    // When extension is installed, query it directly via eth_accounts
+    if (this.isInstalledOnBrowser()) {
+      const provider = this.ethProviderHelper?.getInstalledProvider();
+      if (provider) {
+        try {
+          const accounts = (await provider.request({
+            method: 'eth_accounts',
+          })) as string[];
+          if (Array.isArray(accounts) && accounts.length) {
+            return accounts;
+          }
+        } catch {
+          // provider not available or errored
+        }
+      }
+      return [];
+    }
+
+    // SDK flow for QR/mobile
     if (!MetaMaskSdkClient.isInitialized) {
       try {
         await this.init();
@@ -187,8 +210,8 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     }
 
     // Fall back to checking the injected provider directly via eth_accounts.
-    // This handles the case where the extension has the session but the SDK
-    // hasn't restored it into its in-memory state yet.
+    // Covers edge cases where EIP-6963 announcement hasn't fired yet but
+    // the extension is present and holds an active session.
     const provider = this.ethProviderHelper?.getInstalledProvider();
     if (provider) {
       try {
@@ -207,10 +230,13 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   }
 
   override async endSession(): Promise<void> {
-    // Tear down event listeners BEFORE disconnecting to prevent the SDK's
-    // 'disconnect' event from propagating back to the Dynamic multi-wallet
-    // manager as an unexpected external disconnect (which would log out all
-    // wallets in connect-only mode).
+    if (this.isInstalledOnBrowser()) {
+      return super.endSession();
+    }
+
+    // SDK flow: tear down event listeners BEFORE disconnecting to prevent
+    // the SDK's 'disconnect' event from propagating back to Dynamic's
+    // multi-wallet manager as an unexpected external disconnect.
     this.teardownEventListeners?.();
     await MetaMaskSdkClient.disconnect();
   }
