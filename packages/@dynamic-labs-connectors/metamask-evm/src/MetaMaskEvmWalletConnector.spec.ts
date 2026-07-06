@@ -14,6 +14,7 @@ jest.mock('@dynamic-labs/ethereum', () => {
     public evmNetworks: any[] = [];
     public ethProviderHelper: any;
     public constructorProps: any;
+    public teardownEventListeners: (() => void) | undefined;
     constructor(props: any) {
       this.constructorProps = props;
       this._metadata = props?.metadata;
@@ -23,13 +24,27 @@ jest.mock('@dynamic-labs/ethereum', () => {
       return this._metadata;
     }
     findProvider() {
-      return undefined;
+      return this.ethProviderHelper?.getInstalledProvider();
     }
     isInstalledOnBrowser() {
       return false;
     }
-    endSession() {
-      return Promise.resolve();
+    async getAddress() {
+      return this.ethProviderHelper?.getAddress();
+    }
+    async setupEventListeners() {
+      if (!this.ethProviderHelper) return;
+      const { tearDownEventListeners } = this.ethProviderHelper._setupEventListeners(this);
+      this.teardownEventListeners = tearDownEventListeners;
+    }
+    async endSession() {
+      const provider = this.ethProviderHelper?.findProvider();
+      if (!provider) return;
+      await provider.request({
+        method: 'wallet_revokePermissions',
+        params: [{ eth_accounts: {} }],
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      }).catch(() => {});
     }
   }
   return { EthereumInjectedConnector };
@@ -146,6 +161,24 @@ describe('MetaMaskEvmWalletConnector', () => {
       });
       Object.defineProperty(connector, '_metadata', {
         value: { rdns: 'io.metamask' },
+        writable: true,
+      });
+
+      expect(connector.isInstalledOnBrowser()).toBe(false);
+    });
+
+    it('should return false when metadata is undefined', () => {
+      Object.defineProperty(connector, '_metadata', {
+        value: undefined,
+        writable: true,
+      });
+
+      expect(connector.isInstalledOnBrowser()).toBe(false);
+    });
+
+    it('should return false when metadata.rdns is undefined', () => {
+      Object.defineProperty(connector, '_metadata', {
+        value: { rdns: undefined },
         writable: true,
       });
 
@@ -275,7 +308,7 @@ describe('MetaMaskEvmWalletConnector', () => {
       connector.findProvider();
 
       expect(logger.logVerboseTroubleshootingMessage).toHaveBeenCalledWith(
-        '[MetaMaskEvmWalletConnector] findProvider',
+        '[MetaMaskEvmWalletConnector] findProvider (SDK)',
         { provider: mockProvider },
       );
     });
@@ -697,6 +730,115 @@ describe('MetaMaskEvmWalletConnector', () => {
 
       const networks = await connector.getSupportedNetworks();
       expect(networks).toEqual(['1', '137', '137']);
+    });
+  });
+
+  describe('extension-installed delegation', () => {
+    let extensionConnector: MetaMaskEvmWalletConnector;
+    let mockInjectedProvider: any;
+
+    beforeEach(() => {
+      extensionConnector = new MetaMaskEvmWalletConnector(walletConnectorProps);
+      mockInjectedProvider = {
+        request: jest.fn().mockResolvedValue(['0xExtensionAccount']),
+        on: jest.fn(),
+        removeListener: jest.fn(),
+      };
+
+      // Set up metadata and ethProviderHelper so isInstalledOnBrowser() returns true
+      Object.defineProperty(extensionConnector, '_metadata', {
+        value: { rdns: 'io.metamask' },
+        writable: true,
+      });
+      Object.defineProperty(extensionConnector, 'ethProviderHelper', {
+        value: {
+          eip6963ProviderLookup: jest.fn().mockReturnValue({ provider: mockInjectedProvider }),
+          getInstalledProvider: jest.fn().mockReturnValue(mockInjectedProvider),
+          getAddress: jest.fn().mockResolvedValue('0xExtensionAccount'),
+          findProvider: jest.fn().mockReturnValue(mockInjectedProvider),
+          _setupEventListeners: jest.fn().mockReturnValue({ tearDownEventListeners: jest.fn() }),
+        },
+        writable: true,
+      });
+    });
+
+    it('should delegate findProvider to parent when extension is installed', () => {
+      const result = extensionConnector.findProvider();
+      expect(result).toBe(mockInjectedProvider);
+      expect(MetaMaskSdkClient.getProvider).not.toHaveBeenCalled();
+    });
+
+    it('should delegate getAddress to parent when extension is installed', async () => {
+      const address = await extensionConnector.getAddress();
+      expect(address).toBe('0xExtensionAccount');
+      expect(MetaMaskSdkClient.connect).not.toHaveBeenCalled();
+    });
+
+    it('should delegate setupEventListeners to parent when extension is installed', async () => {
+      await extensionConnector.setupEventListeners();
+      expect(extensionConnector.ethProviderHelper._setupEventListeners).toHaveBeenCalled();
+      expect(MetaMaskSdkClient.getProvider).not.toHaveBeenCalled();
+    });
+
+    it('should delegate getConnectedAccounts to extension provider when installed', async () => {
+      const accounts = await extensionConnector.getConnectedAccounts();
+      expect(mockInjectedProvider.request).toHaveBeenCalledWith({
+        method: 'eth_accounts',
+      });
+      expect(accounts).toEqual(['0xExtensionAccount']);
+    });
+
+    it('should delegate endSession to parent when extension is installed', async () => {
+      // Parent's endSession calls wallet_revokePermissions via findProvider
+      mockInjectedProvider.request.mockResolvedValue(undefined);
+      Object.defineProperty(extensionConnector, 'ethProviderHelper', {
+        value: {
+          eip6963ProviderLookup: jest.fn().mockReturnValue({ provider: mockInjectedProvider }),
+          getInstalledProvider: jest.fn().mockReturnValue(mockInjectedProvider),
+          findProvider: jest.fn().mockReturnValue(mockInjectedProvider),
+        },
+        writable: true,
+      });
+
+      await extensionConnector.endSession();
+      expect(MetaMaskSdkClient.disconnect).not.toHaveBeenCalled();
+    });
+
+    it('should use SDK path for findProvider when extension is NOT installed', () => {
+      // Remove the EIP-6963 provider to simulate no extension
+      Object.defineProperty(extensionConnector, 'ethProviderHelper', {
+        value: {
+          eip6963ProviderLookup: jest.fn().mockReturnValue(undefined),
+          getInstalledProvider: jest.fn().mockReturnValue(undefined),
+        },
+        writable: true,
+      });
+
+      const mockSdkProvider = { selectedAccount: '0xSdk' };
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockSdkProvider);
+
+      const result = extensionConnector.findProvider();
+      expect(result).toBeDefined();
+      expect(MetaMaskSdkClient.getProvider).toHaveBeenCalled();
+    });
+
+    it('should use SDK path for getAddress when extension is NOT installed', async () => {
+      Object.defineProperty(extensionConnector, 'ethProviderHelper', {
+        value: {
+          eip6963ProviderLookup: jest.fn().mockReturnValue(undefined),
+          getInstalledProvider: jest.fn().mockReturnValue(undefined),
+        },
+        writable: true,
+      });
+      Object.defineProperty(extensionConnector, 'evmNetworks', {
+        value: mockEvmNetworks,
+        writable: true,
+      });
+      (MetaMaskSdkClient.isInitialized as any) = true;
+
+      const address = await extensionConnector.getAddress();
+      expect(address).toBe('0x1234567890abcdef1234567890abcdef12345678');
+      expect(MetaMaskSdkClient.connect).toHaveBeenCalled();
     });
   });
 });
