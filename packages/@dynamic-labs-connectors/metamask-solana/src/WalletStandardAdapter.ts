@@ -15,11 +15,19 @@ import type { StandardWallet, WalletAccount } from './types.js';
 export function createWalletStandardAdapter(
   wallet: StandardWallet,
   getSelectedNetwork: () => string,
+  getSelectedAddress?: () => string | undefined,
 ): ISolana {
   const features = wallet.features;
 
   const getCurrentAccount = (): WalletAccount => {
-    const account = wallet.accounts[0];
+    const selectedAddress = getSelectedAddress?.();
+    const selectedAccount = selectedAddress
+      ? wallet.accounts.find((a) => a.address === selectedAddress)
+      : undefined;
+
+    // Prefer the account Dynamic considers active; fall back to the first
+    // connected account so we never sign with an unexpected account.
+    const account = selectedAccount ?? wallet.accounts[0];
     if (!account) {
       throw new Error('[WalletStandardAdapter] No connected account');
     }
