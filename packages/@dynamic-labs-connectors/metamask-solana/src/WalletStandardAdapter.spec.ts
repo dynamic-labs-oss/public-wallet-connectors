@@ -353,8 +353,40 @@ describe('createWalletStandardAdapter', () => {
 
       const unsubscribe = adapter.on('accountChanged', listener);
 
-      expect(on).toHaveBeenCalledWith('change', listener);
+      expect(on).toHaveBeenCalledWith('change', expect.any(Function));
       expect(unsubscribe).toBe(off);
+    });
+
+    it('decodes the new public key and forwards it to the listener', () => {
+      const on = jest.fn();
+      const adapter = createWalletStandardAdapter(
+        buildWallet({ 'standard:events': { on } }),
+        getSelectedNetwork,
+      );
+      const listener = jest.fn();
+      adapter.on('accountChanged', listener);
+
+      const wrapped = on.mock.calls[0][1];
+      const publicKey = new TextEncoder().encode('SoLaNaNewKey');
+      wrapped({ accounts: [{ ...account, publicKey }] });
+
+      expect(listener).toHaveBeenCalledWith('SoLaNaNewKey');
+    });
+
+    it('ignores change events without an account public key', () => {
+      const on = jest.fn();
+      const adapter = createWalletStandardAdapter(
+        buildWallet({ 'standard:events': { on } }),
+        getSelectedNetwork,
+      );
+      const listener = jest.fn();
+      adapter.on('accountChanged', listener);
+
+      const wrapped = on.mock.calls[0][1];
+      wrapped({ accounts: [] });
+      wrapped({});
+
+      expect(listener).not.toHaveBeenCalled();
     });
 
     it('does not subscribe for unsupported events', () => {
@@ -367,6 +399,15 @@ describe('createWalletStandardAdapter', () => {
       adapter.on('disconnect', jest.fn());
 
       expect(on).not.toHaveBeenCalled();
+    });
+
+    it('returns undefined when standard:events is unavailable', () => {
+      const adapter = createWalletStandardAdapter(
+        buildWallet({}),
+        getSelectedNetwork,
+      );
+
+      expect(adapter.on('accountChanged', jest.fn())).toBeUndefined();
     });
   });
 
