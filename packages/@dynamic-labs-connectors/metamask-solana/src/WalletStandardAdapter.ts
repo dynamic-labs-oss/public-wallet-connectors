@@ -133,6 +133,9 @@ export function createWalletStandardAdapter(
     transaction: T,
   ): Promise<T> => {
     const [signed] = await signAllTransactions([transaction]);
+    if (!signed) {
+      throw new Error('[WalletStandardAdapter] No signed transaction returned');
+    }
     return signed;
   };
 

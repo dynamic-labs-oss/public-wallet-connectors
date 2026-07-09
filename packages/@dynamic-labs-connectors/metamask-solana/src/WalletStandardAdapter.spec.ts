@@ -39,6 +39,17 @@ describe('createWalletStandardAdapter', () => {
     const bs58 = jest.requireMock('bs58');
     bs58.default.encode.mockReturnValue('encodedSignature');
     bs58.encode.mockReturnValue('encodedSignature');
+    const { Transaction, VersionedTransaction } = jest.requireMock(
+      '@solana/web3.js',
+    );
+    Transaction.from.mockImplementation((bytes: Uint8Array) => ({
+      deserialized: 'legacy',
+      bytes,
+    }));
+    VersionedTransaction.deserialize.mockImplementation((bytes: Uint8Array) => ({
+      deserialized: 'versioned',
+      bytes,
+    }));
   });
 
   const buildWallet = (
