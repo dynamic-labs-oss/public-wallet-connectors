@@ -67,15 +67,34 @@ export function createWalletStandardAdapter(
     }
   };
 
-  const signTransaction = async <T extends Transaction | VersionedTransaction>(
-    transaction: T,
-  ): Promise<T> => {
+  const deserializeSignedTransaction = <
+    T extends Transaction | VersionedTransaction,
+  >(
+    inputTransaction: T,
+    signedTransaction: Uint8Array,
+  ): T => {
+    const isVersioned = !('instructions' in inputTransaction);
+    if (isVersioned) {
+      return VersionedTransaction.deserialize(
+        signedTransaction,
+      ) as unknown as T;
+    }
+    return Transaction.from(signedTransaction) as unknown as T;
+  };
+
+  const signAllTransactions = async <
+    T extends Transaction | VersionedTransaction,
+  >(
+    transactions: T[],
+  ): Promise<T[]> => {
     const signFn = features['solana:signTransaction']?.['signTransaction'] as
-      | ((input: {
-          account: WalletAccount;
-          chain: string;
-          transaction: Uint8Array;
-        }) => Promise<{ signedTransaction: Uint8Array }[]>)
+      | ((
+          ...inputs: {
+            account: WalletAccount;
+            chain: string;
+            transaction: Uint8Array;
+          }[]
+        ) => Promise<{ signedTransaction: Uint8Array }[]>)
       | undefined;
 
     if (!signFn) {
@@ -85,31 +104,36 @@ export function createWalletStandardAdapter(
     }
 
     const account = getCurrentAccount();
-    const serializedTransaction = transaction.serialize({
-      requireAllSignatures: false,
-    });
-    const result = await signFn({
+    const chain = getChain();
+
+    const inputs = transactions.map((transaction) => ({
       account,
-      chain: getChain(),
-      transaction: Uint8Array.from(serializedTransaction),
+      chain,
+      transaction: Uint8Array.from(
+        transaction.serialize({ requireAllSignatures: false }),
+      ),
+    }));
+
+    // Sign every transaction in a single wallet-standard call so the user is
+    // prompted once for the whole batch instead of once per transaction.
+    const result = await signFn(...inputs);
+
+    return transactions.map((transaction, index) => {
+      const signed = result[index]?.signedTransaction;
+      if (!signed) {
+        throw new Error(
+          '[WalletStandardAdapter] No signed transaction returned',
+        );
+      }
+      return deserializeSignedTransaction(transaction, signed);
     });
-
-    const signed = result[0]?.signedTransaction;
-    if (!signed) throw new Error('[WalletStandardAdapter] No signed transaction returned');
-
-    const isVersioned = !('instructions' in transaction);
-    if (isVersioned) {
-      return VersionedTransaction.deserialize(signed) as unknown as T;
-    }
-    return Transaction.from(signed) as unknown as T;
   };
 
-  const signAllTransactions = async <
-    T extends Transaction | VersionedTransaction,
-  >(
-    transactions: T[],
-  ): Promise<T[]> => {
-    return Promise.all(transactions.map(signTransaction));
+  const signTransaction = async <T extends Transaction | VersionedTransaction>(
+    transaction: T,
+  ): Promise<T> => {
+    const [signed] = await signAllTransactions([transaction]);
+    return signed;
   };
 
   const signAndSendTransaction = async <
