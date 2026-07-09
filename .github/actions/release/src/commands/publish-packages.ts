@@ -50,19 +50,41 @@ const createRelease = async (
 
   if (!dryRun) {
     const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
-    await oktokit.rest.repos.createRelease({
-      owner,
-      repo,
-      tag_name: gitTag,
-      target_commitish,
-      name: gitTag,
-      prerelease: isPrerelease,
-      body: changelogBody,
-      make_latest: isLatest ? 'true' : 'false',
-    })
+    try {
+      await oktokit.rest.repos.createRelease({
+        owner,
+        repo,
+        tag_name: gitTag,
+        target_commitish,
+        name: gitTag,
+        prerelease: isPrerelease,
+        body: changelogBody,
+        make_latest: isLatest ? 'true' : 'false',
+      })
+    } catch (error) {
+      // A release for this tag may already exist from a previous (failed)
+      // publish run. Treat that as non-fatal so re-running publish is
+      // idempotent and can still proceed to (re)publish any packages that are
+      // not yet on npm.
+      if (!isReleaseAlreadyExistsError(error)) {
+        throw error;
+      }
+      core.info(
+        `Release for tag ${gitTag} already exists; skipping release creation.`,
+      );
+    }
   }
 
   core.endGroup();
+};
+
+const isReleaseAlreadyExistsError = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+  const status = (error as { status?: number }).status;
+  const message = error instanceof Error ? error.message : '';
+  return status === 422 && message.includes('already_exists');
 };
 
 const publishPackages = async () => {
