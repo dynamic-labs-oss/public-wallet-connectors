@@ -106,10 +106,13 @@ runs:
     - name: Upgrade npm for OIDC Trusted Publishing
       # npm's Trusted Publishing (OIDC) support was stabilized in npm 11.5.1.
       # Node 20 ships with npm ~10.8, so we upgrade before calling `npm publish`.
+      # Pin to the 11.x line: npm@latest now points at 12.x, which drops Node 20
+      # (engines: node ^22.22.2 || ...), whereas all of 11.x still supports it
+      # (engines: node ^20.17.0 || >=22.9.0).
       if: "${{ inputs.type == 'publish' }}"
       shell: bash
       run: |-
-        npm install -g npm@latest
+        npm install -g npm@11
         echo "npm: $(npm --version)"
     - name: Publish Packages to npm
       if: "${{ inputs.type == 'publish' }}"
