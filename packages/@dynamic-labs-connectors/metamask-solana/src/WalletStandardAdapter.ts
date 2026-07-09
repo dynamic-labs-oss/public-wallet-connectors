@@ -203,12 +203,28 @@ export function createWalletStandardAdapter(
     const onFn = features['standard:events']?.['on'] as
       | ((
           event: string,
-          listener: (...args: unknown[]) => void,
+          wrapped: (properties: {
+            accounts?: readonly WalletAccount[];
+          }) => void,
         ) => () => void)
       | undefined;
 
     if (!onFn || event !== 'accountChanged') return;
-    return onFn('change', listener);
+
+    // The wallet-standard 'change' event delivers a change-properties object,
+    // but ISolana 'accountChanged' subscribers expect the new account's
+    // public key string. Adapt the payload so consumers receive the same
+    // shape as Dynamic's generic wallet-standard signer.
+    const wrapped = (properties: {
+      accounts?: readonly WalletAccount[];
+    }): void => {
+      const publicKey = properties.accounts?.[0]?.publicKey;
+      if (publicKey) {
+        listener(new TextDecoder().decode(publicKey));
+      }
+    };
+
+    return onFn('change', wrapped);
   };
 
   const noop = () => {
