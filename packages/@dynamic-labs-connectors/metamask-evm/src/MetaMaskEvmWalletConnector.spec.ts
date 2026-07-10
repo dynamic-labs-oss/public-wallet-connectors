@@ -1,11 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type EthereumWalletConnectorOpts } from '@dynamic-labs/ethereum-core';
+import { isIOS, PlatformService } from '@dynamic-labs/utils';
 import { MetaMaskEvmWalletConnector } from './MetaMaskEvmWalletConnector.js';
 import { MetaMaskSdkClient } from './MetaMaskSdkClient.js';
 
 jest.mock('@metamask/connect-evm', () => ({
   createEVMClient: jest.fn(),
 }));
+
+jest.mock('@dynamic-labs/utils', () => ({
+  isIOS: jest.fn(),
+  PlatformService: { openURL: jest.fn() },
+}));
+
+const isIOSMock = isIOS as jest.Mock;
+const openURLMock = PlatformService.openURL as jest.Mock;
 
 jest.mock('@dynamic-labs/ethereum', () => {
   class EthereumInjectedConnector {
@@ -402,6 +411,60 @@ describe('MetaMaskEvmWalletConnector', () => {
       expect(mockProvider.request).toHaveBeenCalledWith({
         method: 'eth_chainId',
       });
+    });
+
+    it('opens the MetaMask native deep link for signing methods on iOS', async () => {
+      isIOSMock.mockReturnValue(true);
+      const mockProvider = {
+        selectedAccount: '0x123',
+        request: jest.fn().mockResolvedValue('0xsignature'),
+        on: jest.fn(),
+        removeListener: jest.fn(),
+      };
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+
+      const provider = connector.findProvider();
+      await provider?.request({ method: 'personal_sign', params: [] });
+
+      expect(openURLMock).toHaveBeenCalledWith('metamask://', 'self');
+    });
+
+    it('does not open a deep link for read-only methods on iOS', async () => {
+      isIOSMock.mockReturnValue(true);
+      const mockProvider = {
+        selectedAccount: '0x123',
+        request: jest.fn().mockResolvedValue('0x1'),
+        on: jest.fn(),
+        removeListener: jest.fn(),
+      };
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+
+      const provider = connector.findProvider();
+      await provider?.request({ method: 'eth_chainId' });
+
+      expect(openURLMock).not.toHaveBeenCalled();
+    });
+
+    it('does not open a deep link for signing methods off iOS', async () => {
+      isIOSMock.mockReturnValue(false);
+      const mockProvider = {
+        selectedAccount: '0x123',
+        request: jest.fn().mockResolvedValue('0xsignature'),
+        on: jest.fn(),
+        removeListener: jest.fn(),
+      };
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
+
+      const provider = connector.findProvider();
+      await provider?.request({ method: 'personal_sign', params: [] });
+
+      expect(openURLMock).not.toHaveBeenCalled();
     });
   });
 
