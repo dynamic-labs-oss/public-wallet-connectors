@@ -8,9 +8,22 @@ import {
   EthereumInjectedConnector,
   type IEthereum,
 } from '@dynamic-labs/ethereum';
+import { isIOS, PlatformService } from '@dynamic-labs/utils';
 
 import { MetaMaskSdkClient } from './MetaMaskSdkClient.js';
 import { toNumericChainId } from './utils.js';
+
+const METAMASK_NATIVE_DEEPLINK = 'metamask://';
+
+// EVM methods that prompt the user in the wallet and therefore need MetaMask to
+// be brought to the foreground on mobile.
+const DEEP_LINK_SIGNING_METHODS = [
+  'personal_sign',
+  'eth_sign',
+  'eth_signTypedData',
+  'eth_signTypedData_v4',
+  'eth_sendTransaction',
+];
 
 /**
  * MetaMask wallet connector for Dynamic.
@@ -87,6 +100,7 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     return {
       ...provider,
       request: async (args: { method: string; params?: unknown[] }) => {
+        this.openDeepLinkForSigningRequest(args.method);
         const result = await provider.request(args);
         if (
           args.method === 'eth_requestAccounts' &&
@@ -101,6 +115,29 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       on: provider.on?.bind(provider),
       removeListener: provider.removeListener?.bind(provider),
     } as unknown as IEthereum;
+  }
+
+  /**
+   * On iOS Safari the MetaMask SDK opens its own deep link via `window.open`
+   * outside a user gesture, which the popup blocker suppresses — so the app
+   * never surfaces for signing/transaction requests (Android is unaffected).
+   * Navigate to MetaMask's native scheme instead (`location.assign` via
+   * openURL 'self'), which iOS honours, right before the request is
+   * dispatched. Scoped to iOS and to methods that prompt in the wallet.
+   */
+  private openDeepLinkForSigningRequest(method: string): void {
+    if (
+      this.isInstalledOnBrowser() ||
+      !isIOS() ||
+      !DEEP_LINK_SIGNING_METHODS.includes(method)
+    ) {
+      return;
+    }
+
+    const nativeDeepLink =
+      this.metadata?.deepLinks?.mobile?.native ?? METAMASK_NATIVE_DEEPLINK;
+
+    void PlatformService.openURL(nativeDeepLink, 'self');
   }
 
   override async setupEventListeners(): Promise<void> {
