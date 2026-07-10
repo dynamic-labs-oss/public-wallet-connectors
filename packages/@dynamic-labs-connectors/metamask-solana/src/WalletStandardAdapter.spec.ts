@@ -1,5 +1,15 @@
+import { isIOS, PlatformService } from '@dynamic-labs/utils';
+
 import { createWalletStandardAdapter } from './WalletStandardAdapter.js';
 import type { StandardWallet, WalletAccount } from './types.js';
+
+jest.mock('@dynamic-labs/utils', () => ({
+  isIOS: jest.fn(),
+  PlatformService: { openURL: jest.fn() },
+}));
+
+const isIOSMock = isIOS as jest.Mock;
+const openURLMock = PlatformService.openURL as jest.Mock;
 
 jest.mock('@solana/web3.js', () => ({
   PublicKey: jest.fn().mockImplementation((key) => ({ key })),
@@ -215,6 +225,53 @@ describe('createWalletStandardAdapter', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         adapter.signAndSendTransaction(buildLegacyTransaction('a') as any),
       ).rejects.toThrow('No signature returned');
+    });
+  });
+
+  describe('iOS deep link foregrounding', () => {
+    it('opens the MetaMask native deep link for signMessage on iOS', async () => {
+      isIOSMock.mockReturnValue(true);
+      const signMessage = jest
+        .fn()
+        .mockResolvedValue([{ signature: new Uint8Array([5]) }]);
+      const adapter = createWalletStandardAdapter(
+        buildWallet({ 'solana:signMessage': { signMessage } }),
+        getSelectedNetwork,
+      );
+
+      await adapter.signMessage(new Uint8Array([1]));
+
+      expect(openURLMock).toHaveBeenCalledWith('metamask://', 'self');
+    });
+
+    it('opens the MetaMask native deep link for signTransaction on iOS', async () => {
+      isIOSMock.mockReturnValue(true);
+      const signTransaction = jest
+        .fn()
+        .mockResolvedValue([{ signedTransaction: new Uint8Array([9]) }]);
+      const adapter = createWalletStandardAdapter(
+        buildWallet({ 'solana:signTransaction': { signTransaction } }),
+        getSelectedNetwork,
+      );
+
+      await adapter.signTransaction(buildLegacyTransaction('tx') as never);
+
+      expect(openURLMock).toHaveBeenCalledWith('metamask://', 'self');
+    });
+
+    it('does not open a deep link off iOS', async () => {
+      isIOSMock.mockReturnValue(false);
+      const signMessage = jest
+        .fn()
+        .mockResolvedValue([{ signature: new Uint8Array([5]) }]);
+      const adapter = createWalletStandardAdapter(
+        buildWallet({ 'solana:signMessage': { signMessage } }),
+        getSelectedNetwork,
+      );
+
+      await adapter.signMessage(new Uint8Array([1]));
+
+      expect(openURLMock).not.toHaveBeenCalled();
     });
   });
 
