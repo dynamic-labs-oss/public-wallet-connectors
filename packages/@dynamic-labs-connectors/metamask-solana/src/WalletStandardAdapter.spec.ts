@@ -161,6 +161,76 @@ describe('createWalletStandardAdapter', () => {
     });
   });
 
+  describe('account resolution', () => {
+    const secondAccount: WalletAccount = {
+      address: 'SoLaNaSecond',
+      publicKey: new Uint8Array([4, 5, 6]),
+      chains: ['solana:mainnet'],
+      features: [],
+    };
+
+    it('signs with the account matching the selected address', async () => {
+      const signTransaction = jest
+        .fn()
+        .mockResolvedValue([{ signedTransaction: new Uint8Array([10]) }]);
+      const wallet = buildWallet(
+        { 'solana:signTransaction': { signTransaction } },
+        [account, secondAccount],
+      );
+
+      const adapter = createWalletStandardAdapter(
+        wallet,
+        getSelectedNetwork,
+        () => secondAccount.address,
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await adapter.signTransaction(buildLegacyTransaction('a') as any);
+
+      expect(signTransaction.mock.calls[0][0]).toMatchObject({
+        account: secondAccount,
+      });
+    });
+
+    it('falls back to the first account when the selected address is not found', async () => {
+      const signTransaction = jest
+        .fn()
+        .mockResolvedValue([{ signedTransaction: new Uint8Array([10]) }]);
+      const wallet = buildWallet(
+        { 'solana:signTransaction': { signTransaction } },
+        [account, secondAccount],
+      );
+
+      const adapter = createWalletStandardAdapter(
+        wallet,
+        getSelectedNetwork,
+        () => 'SoLaNaUnknown',
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await adapter.signTransaction(buildLegacyTransaction('a') as any);
+
+      expect(signTransaction.mock.calls[0][0]).toMatchObject({ account });
+    });
+
+    it('falls back to the first account when no resolver is provided', async () => {
+      const signTransaction = jest
+        .fn()
+        .mockResolvedValue([{ signedTransaction: new Uint8Array([10]) }]);
+      const wallet = buildWallet(
+        { 'solana:signTransaction': { signTransaction } },
+        [account, secondAccount],
+      );
+
+      const adapter = createWalletStandardAdapter(wallet, getSelectedNetwork);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await adapter.signTransaction(buildLegacyTransaction('a') as any);
+
+      expect(signTransaction.mock.calls[0][0]).toMatchObject({ account });
+    });
+  });
+
   describe('signTransaction', () => {
     it('delegates to a single batched call', async () => {
       const signTransaction = jest

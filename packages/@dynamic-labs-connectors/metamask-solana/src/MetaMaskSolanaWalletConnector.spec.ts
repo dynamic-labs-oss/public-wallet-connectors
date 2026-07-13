@@ -334,6 +334,26 @@ describe('MetaMaskSolanaWalletConnector', () => {
       const clusterResolver = createWalletStandardAdapter.mock.calls.at(-1)[1];
       expect(clusterResolver()).toBe('mainnet');
     });
+
+    it('should pass a selected-address resolver to the wallet standard adapter', async () => {
+      const { createWalletStandardAdapter } = jest.requireMock(
+        './WalletStandardAdapter.js',
+      );
+      const mockWallet = { accounts: [{ address: 'SoLaNa1234' }] };
+      (MetaMaskSolanaSdkClient.getWallet as jest.Mock).mockReturnValue(
+        mockWallet,
+      );
+      (
+        MetaMaskSolanaSdkClient.getSelectedAccount as jest.Mock
+      ).mockReturnValue('SoLaNaActive');
+      (MetaMaskSolanaSdkClient.isInitialized as any) = true;
+
+      await connector.connect();
+
+      const selectedAddressResolver =
+        createWalletStandardAdapter.mock.calls.at(-1)[2];
+      expect(selectedAddressResolver()).toBe('SoLaNaActive');
+    });
   });
 
   describe('signMessage', () => {
