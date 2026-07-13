@@ -23,6 +23,10 @@ describe('utils', () => {
       expect(toNumericChainId('137')).toBe(137);
     });
 
+    it('should handle CAIP-2 EVM chain ID', () => {
+      expect(toNumericChainId('eip155:1')).toBe(1);
+    });
+
     it('should handle large chain ID', () => {
       expect(toNumericChainId('42161')).toBe(42161);
     });
@@ -128,6 +132,15 @@ describe('utils', () => {
       ];
       expect(buildSupportedNetworks(networks)).toEqual({
         '0x89': 'https://polygon.rpc',
+      });
+    });
+
+    it('should handle CAIP-2 EVM chain IDs', () => {
+      const networks: EvmNetwork[] = [
+        { chainId: 'eip155:8453', rpcUrls: ['https://base.rpc'] },
+      ];
+      expect(buildSupportedNetworks(networks)).toEqual({
+        '0x2105': 'https://base.rpc',
       });
     });
 
