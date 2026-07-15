@@ -506,7 +506,25 @@ describe('MetaMaskSdkClient', () => {
       await MetaMaskSdkClient.init(mockConfig);
 
       capturedMobile.preferredOpenLink('metamask://connect?test');
-      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?test', 'blank');
+      // App-scheme deep links navigate the current document ('self') rather
+      // than opening a popup ('blank'), which mobile browsers block/reject.
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?test', 'self');
+    });
+
+    it('preferredOpenLink should open web URLs in a new window', async () => {
+      let capturedMobile: any;
+      mockCreateEVMClient.mockImplementation((options) => {
+        capturedMobile = options.mobile;
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init(mockConfig);
+
+      capturedMobile.preferredOpenLink('https://metamask.app.link/connect');
+      expect(mockOpenURL).toHaveBeenCalledWith(
+        'https://metamask.app.link/connect',
+        'blank',
+      );
     });
   });
 
@@ -586,7 +604,7 @@ describe('MetaMaskSdkClient', () => {
       mockOpenURL.mockClear();
 
       MetaMaskSdkClient.retryDeepLink();
-      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?session=abc', 'blank');
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?session=abc', 'self');
     });
 
     it('should do nothing when no connect URI is stored', () => {
