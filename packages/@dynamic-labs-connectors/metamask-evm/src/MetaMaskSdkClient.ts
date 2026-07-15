@@ -18,9 +18,20 @@ export interface MetaMaskSdkClientConfig {
  * Opens a deep link using the platform service.
  * Used as the mobile.preferredOpenLink callback for the MetaMask SDK
  * to handle deep links to the MetaMask Mobile app.
+ *
+ * App-scheme deep links (e.g. `metamask://connect/…`) must be opened via a
+ * top-level navigation, not `window.open(..., '_blank')`:
+ *  - Firefox iOS only permits http/https/javascript/data/about schemes for
+ *    popups, so it silently rejects `window.open('metamask://…')`.
+ *  - iOS Safari's popup blocker also suppresses `window.open` outside a user
+ *    gesture (the SDK opens deep links asynchronously).
+ * Navigating the current document (`openURL(link, 'self')` -> location.assign)
+ * is honoured by all iOS browsers, and the OS intercepts the scheme without
+ * unloading the page. Web URLs keep the new-tab behavior.
  */
 const openDeepLink = (link: string): void => {
-  PlatformService.openURL(link, 'blank');
+  const isWebUrl = /^https?:\/\//i.test(link);
+  PlatformService.openURL(link, isWebUrl ? 'blank' : 'self');
 };
 
 /**
