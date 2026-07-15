@@ -238,7 +238,20 @@ describe('MetaMaskSolanaSdkClient', () => {
 
       const mergeCall = mockMergeOptions.mock.calls[0][0];
       mergeCall.mobile.preferredOpenLink('metamask://connect?test');
-      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?test', 'blank');
+      // App-scheme deep links navigate the current document ('self') rather
+      // than opening a popup ('blank'), which mobile browsers block/reject.
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?test', 'self');
+    });
+
+    it('preferredOpenLink should open web URLs in a new window', async () => {
+      await MetaMaskSolanaSdkClient.init({});
+
+      const mergeCall = mockMergeOptions.mock.calls[0][0];
+      mergeCall.mobile.preferredOpenLink('https://metamask.app.link/connect');
+      expect(mockOpenURL).toHaveBeenCalledWith(
+        'https://metamask.app.link/connect',
+        'blank',
+      );
     });
   });
 
@@ -279,7 +292,7 @@ describe('MetaMaskSolanaSdkClient', () => {
       mockOpenURL.mockClear();
 
       MetaMaskSolanaSdkClient.retryDeepLink();
-      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?session=abc', 'blank');
+      expect(mockOpenURL).toHaveBeenCalledWith('metamask://connect?session=abc', 'self');
     });
 
     it('should do nothing when no connect URI is stored', () => {
