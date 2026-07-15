@@ -1,27 +1,8 @@
 import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
 import type { ISolana } from '@dynamic-labs/solana-core';
-import { isIOS, PlatformService } from '@dynamic-labs/utils';
 import bs58 from 'bs58';
 
 import type { StandardWallet, WalletAccount } from './types.js';
-
-const METAMASK_NATIVE_DEEPLINK = 'metamask://';
-
-/**
- * On iOS Safari the MetaMask SDK opens its own deep link via `window.open`
- * outside a user gesture, which the popup blocker suppresses — so the app
- * never surfaces for signing requests (Android is unaffected). Navigate to
- * MetaMask's native scheme instead (`location.assign` via openURL 'self'),
- * which iOS honours, right before the async wallet-standard call. No-op off
- * iOS, so every other platform keeps its existing behavior.
- */
-const foregroundMetaMaskOnIos = (): void => {
-  if (!isIOS()) {
-    return;
-  }
-
-  void PlatformService.openURL(METAMASK_NATIVE_DEEPLINK, 'self');
-};
 
 /**
  * Adapts a wallet-standard Wallet into the ISolana interface that Dynamic expects.
@@ -106,8 +87,6 @@ export function createWalletStandardAdapter(
   >(
     transactions: T[],
   ): Promise<T[]> => {
-    foregroundMetaMaskOnIos();
-
     const signFn = features['solana:signTransaction']?.['signTransaction'] as
       | ((
           ...inputs: {
@@ -165,8 +144,6 @@ export function createWalletStandardAdapter(
   >(
     transaction: T,
   ): Promise<{ signature: string }> => {
-    foregroundMetaMaskOnIos();
-
     const sendFn = features['solana:signAndSendTransaction']?.[
       'signAndSendTransaction'
     ] as
@@ -202,8 +179,6 @@ export function createWalletStandardAdapter(
   const signMessage = async (
     message: Uint8Array,
   ): Promise<{ signature: Uint8Array }> => {
-    foregroundMetaMaskOnIos();
-
     const signFn = features['solana:signMessage']?.['signMessage'] as
       | ((input: {
           account: WalletAccount;
