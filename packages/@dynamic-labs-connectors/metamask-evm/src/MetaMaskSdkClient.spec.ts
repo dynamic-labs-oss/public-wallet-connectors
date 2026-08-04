@@ -2,12 +2,17 @@ import {
   MetaMaskSdkClient,
   type MetaMaskSdkClientConfig,
 } from './MetaMaskSdkClient.js';
+import { clearMetaMaskSessionStorage } from './clearMetaMaskSessionStorage.js';
 
 const mockCreateEVMClient = jest.fn();
 const mockOpenURL = jest.fn();
 
 jest.mock('@metamask/connect-evm', () => ({
   createEVMClient: (...args: unknown[]) => mockCreateEVMClient(...args),
+}));
+
+jest.mock('./clearMetaMaskSessionStorage.js', () => ({
+  clearMetaMaskSessionStorage: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('@dynamic-labs/wallet-connector-core', () => ({
@@ -90,6 +95,16 @@ describe('MetaMaskSdkClient', () => {
       expect(MetaMaskSdkClient.isInitialized).toBe(false);
       await MetaMaskSdkClient.init(mockConfig);
       expect(MetaMaskSdkClient.isInitialized).toBe(true);
+    });
+
+    it('should clear IndexedDB session storage before creating the EVM client', async () => {
+      await MetaMaskSdkClient.init(mockConfig);
+
+      expect(clearMetaMaskSessionStorage).toHaveBeenCalledTimes(1);
+      expect(mockCreateEVMClient).toHaveBeenCalledTimes(1);
+      expect(
+        (clearMetaMaskSessionStorage as jest.Mock).mock.invocationCallOrder[0],
+      ).toBeLessThan(mockCreateEVMClient.mock.invocationCallOrder[0]);
     });
 
     it('should call createEVMClient with correct config', async () => {

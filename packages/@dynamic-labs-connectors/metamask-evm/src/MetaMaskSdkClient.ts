@@ -2,6 +2,7 @@ import type { MetamaskConnectEVM } from '@metamask/connect-evm';
 import { logger } from '@dynamic-labs/wallet-connector-core';
 import { PlatformService } from '@dynamic-labs/utils';
 
+import { clearMetaMaskSessionStorage } from './clearMetaMaskSessionStorage.js';
 import {
   buildSupportedNetworks,
   type HexChainId,
@@ -78,6 +79,12 @@ export class MetaMaskSdkClient {
         '[MetaMaskSdkClient] No valid networks with RPC URLs provided',
       );
     }
+
+    // Drop any persisted IndexedDB session state left by a previous tab,
+    // page reload, or abandoned pairing. The SDK's auto-recovery otherwise
+    // tries to resume a dead relay/MWP session and blocks the user behind a
+    // non-configurable 10-second timeout before emitting a fresh URI.
+    await clearMetaMaskSessionStorage();
 
     const { createEVMClient } = await import('@metamask/connect-evm');
     const sdk = await createEVMClient({
