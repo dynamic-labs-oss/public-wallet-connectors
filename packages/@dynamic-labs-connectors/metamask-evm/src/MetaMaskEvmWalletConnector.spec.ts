@@ -50,9 +50,10 @@ jest.mock('@dynamic-labs/ethereum', () => {
         .request({
           method: 'wallet_revokePermissions',
           params: [{ eth_accounts: {} }],
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
         })
-        .catch(() => {});
+        .catch(() => {
+          // ignore revoke failures
+        });
     }
   }
   return { EthereumInjectedConnector };
