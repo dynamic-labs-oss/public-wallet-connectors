@@ -1,7 +1,10 @@
+import { getAddress } from 'viem';
+
 import {
   toNumericChainId,
   extractRpcUrl,
   buildSupportedNetworks,
+  checksumAddresses,
   type EvmNetwork,
 } from './utils.js';
 
@@ -139,6 +142,33 @@ describe('utils', () => {
       expect(buildSupportedNetworks(networks)).toEqual({
         '0x1': 'https://eth.rpc',
       });
+    });
+  });
+
+  describe('checksumAddresses', () => {
+    const RAW_ADDRESS_1 = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045';
+    const RAW_ADDRESS_2 = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+
+    it('should checksum lowercase addresses', () => {
+      expect(checksumAddresses([RAW_ADDRESS_1])).toEqual([
+        getAddress(RAW_ADDRESS_1),
+      ]);
+    });
+
+    it('should leave already-checksummed addresses unchanged', () => {
+      const checksummed = getAddress(RAW_ADDRESS_1);
+      expect(checksumAddresses([checksummed])).toEqual([checksummed]);
+    });
+
+    it('should checksum multiple addresses', () => {
+      expect(checksumAddresses([RAW_ADDRESS_1, RAW_ADDRESS_2])).toEqual([
+        getAddress(RAW_ADDRESS_1),
+        getAddress(RAW_ADDRESS_2),
+      ]);
+    });
+
+    it('should return an empty array for no addresses', () => {
+      expect(checksumAddresses([])).toEqual([]);
     });
   });
 });

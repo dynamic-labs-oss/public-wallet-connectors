@@ -10,7 +10,7 @@ import {
 } from '@dynamic-labs/ethereum';
 
 import { MetaMaskSdkClient } from './MetaMaskSdkClient.js';
-import { toNumericChainId } from './utils.js';
+import { checksumAddresses, toNumericChainId } from './utils.js';
 
 /**
  * MetaMask wallet connector for Dynamic.
@@ -35,10 +35,13 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     const metaMaskEip6963Provider =
       this.ethProviderHelper?.eip6963ProviderLookup(this.metadata.rdns);
 
-    logger.logVerboseTroubleshootingMessage('[MetaMaskEvmWalletConnector] isInstalledOnBrowser', {
-      metaMaskEip6963Provider,
-      metadata: this.metadata,
-    });
+    logger.logVerboseTroubleshootingMessage(
+      '[MetaMaskEvmWalletConnector] isInstalledOnBrowser',
+      {
+        metaMaskEip6963Provider,
+        metadata: this.metadata,
+      },
+    );
 
     const isInstalled = Boolean(metaMaskEip6963Provider);
 
@@ -62,7 +65,7 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
 
     this.walletConnectorEventsEmitter.emit(
       'connectorInitCompleted',
-      this.overrideKey
+      this.overrideKey,
     );
   }
 
@@ -78,9 +81,12 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
 
     const provider = MetaMaskSdkClient.getProvider();
 
-    logger.logVerboseTroubleshootingMessage('[MetaMaskEvmWalletConnector] findProvider (SDK)', {
-      provider,
-    });
+    logger.logVerboseTroubleshootingMessage(
+      '[MetaMaskEvmWalletConnector] findProvider (SDK)',
+      {
+        provider,
+      },
+    );
 
     if (!provider?.selectedAccount) return undefined;
 
@@ -159,9 +165,7 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       if (opts?.onDisplayUri) {
         await MetaMaskSdkClient.disconnect();
       }
-      const chainIds = this.evmNetworks.map((n) =>
-        toNumericChainId(n.chainId),
-      );
+      const chainIds = this.evmNetworks.map((n) => toNumericChainId(n.chainId));
       const { accounts } = await MetaMaskSdkClient.connect(chainIds);
       return accounts?.[0];
     } catch (error) {
@@ -182,7 +186,7 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
             method: 'eth_accounts',
           })) as string[];
           if (Array.isArray(accounts) && accounts.length) {
-            return accounts;
+            return checksumAddresses(accounts);
           }
         } catch {
           // provider not available or errored
@@ -203,7 +207,7 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     try {
       const accounts = MetaMaskSdkClient.getInstance().accounts;
       if (accounts?.length) {
-        return accounts;
+        return checksumAddresses(accounts);
       }
     } catch {
       // SDK not available
@@ -219,7 +223,7 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
           method: 'eth_accounts',
         })) as string[];
         if (Array.isArray(accounts) && accounts.length) {
-          return accounts;
+          return checksumAddresses(accounts);
         }
       } catch {
         // provider not available or errored
