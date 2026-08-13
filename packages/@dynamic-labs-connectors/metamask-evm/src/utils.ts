@@ -1,3 +1,5 @@
+import { getAddress, type Hex } from 'viem';
+
 /**
  * Minimal EvmNetwork interface for Dynamic SDK integration.
  */
@@ -26,6 +28,17 @@ export function toNumericChainId(chainId: number | string): number {
   if (typeof chainId === 'number') return chainId;
   if (chainId.startsWith('0x')) return parseInt(chainId, 16);
   return parseInt(chainId, 10);
+}
+
+/**
+ * Checksum raw eth_accounts/RPC addresses (EIP-55). Dynamic's own
+ * `EthereumWallet.address` is always checksummed, so callers that compare
+ * connected accounts against it (e.g. wagmi-connector's `isAuthorized`)
+ * need these to match case rather than the lowercase form some providers
+ * return raw RPC responses in.
+ */
+export function checksumAddresses(addresses: string[]): string[] {
+  return addresses.map((address) => getAddress(address as Hex));
 }
 
 /**

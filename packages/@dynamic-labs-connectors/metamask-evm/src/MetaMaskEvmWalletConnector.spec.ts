@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { getAddress } from 'viem';
+
 import { type EthereumWalletConnectorOpts } from '@dynamic-labs/ethereum-core';
 import { MetaMaskEvmWalletConnector } from './MetaMaskEvmWalletConnector.js';
 import { MetaMaskSdkClient } from './MetaMaskSdkClient.js';
+
+const RAW_ADDRESS_1 = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045';
+const RAW_ADDRESS_2 = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
 
 jest.mock('@metamask/connect-evm', () => ({
   createEVMClient: jest.fn(),
@@ -34,17 +39,21 @@ jest.mock('@dynamic-labs/ethereum', () => {
     }
     async setupEventListeners() {
       if (!this.ethProviderHelper) return;
-      const { tearDownEventListeners } = this.ethProviderHelper._setupEventListeners(this);
+      const { tearDownEventListeners } =
+        this.ethProviderHelper._setupEventListeners(this);
       this.teardownEventListeners = tearDownEventListeners;
     }
     async endSession() {
       const provider = this.ethProviderHelper?.findProvider();
       if (!provider) return;
-      await provider.request({
-        method: 'wallet_revokePermissions',
-        params: [{ eth_accounts: {} }],
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      }).catch(() => {});
+      await provider
+        .request({
+          method: 'wallet_revokePermissions',
+          params: [{ eth_accounts: {} }],
+        })
+        .catch(() => {
+          // ignore revoke failures
+        });
     }
   }
   return { EthereumInjectedConnector };
@@ -124,9 +133,7 @@ describe('MetaMaskEvmWalletConnector', () => {
 
   describe('isInstalledOnBrowser', () => {
     it('should return true when ethProviderHelper finds a provider', () => {
-      const eip6963ProviderLookup = jest
-        .fn()
-        .mockReturnValue({ provider: {} });
+      const eip6963ProviderLookup = jest.fn().mockReturnValue({ provider: {} });
       Object.defineProperty(connector, 'ethProviderHelper', {
         value: { eip6963ProviderLookup },
         writable: true,
@@ -186,7 +193,9 @@ describe('MetaMaskEvmWalletConnector', () => {
     });
 
     it('should log troubleshooting context with metadata and provider', () => {
-      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      const { logger } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
       const fakeProvider = { provider: 'fake' };
       const eip6963ProviderLookup = jest.fn().mockReturnValue(fakeProvider);
       Object.defineProperty(connector, 'ethProviderHelper', {
@@ -242,10 +251,7 @@ describe('MetaMaskEvmWalletConnector', () => {
 
       await connector.init();
 
-      expect(emitSpy).toHaveBeenCalledWith(
-        'connectorInitStarted',
-        'metamask',
-      );
+      expect(emitSpy).toHaveBeenCalledWith('connectorInitStarted', 'metamask');
       expect(initCalledWhen).toBe('after');
     });
 
@@ -281,10 +287,7 @@ describe('MetaMaskEvmWalletConnector', () => {
 
       await connector.init();
 
-      expect(emitSpy).toHaveBeenCalledWith(
-        'connectorInitStarted',
-        'metamask',
-      );
+      expect(emitSpy).toHaveBeenCalledWith('connectorInitStarted', 'metamask');
       expect(emitSpy).toHaveBeenCalledWith(
         'connectorInitCompleted',
         'metamask',
@@ -299,7 +302,9 @@ describe('MetaMaskEvmWalletConnector', () => {
     });
 
     it('should log troubleshooting context with the resolved provider', () => {
-      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      const { logger } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
       const mockProvider = { selectedAccount: '0x123' };
       (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
         mockProvider,
@@ -574,12 +579,15 @@ describe('MetaMaskEvmWalletConnector', () => {
   });
 
   describe('getConnectedAccounts', () => {
-    it('should return accounts from SDK instance', async () => {
+    it('should return checksummed accounts from SDK instance', async () => {
       (MetaMaskSdkClient.isInitialized as any) = true;
-      mockSdk.accounts = ['0x123', '0x456'];
+      mockSdk.accounts = [RAW_ADDRESS_1, RAW_ADDRESS_2];
 
       const accounts = await connector.getConnectedAccounts();
-      expect(accounts).toEqual(['0x123', '0x456']);
+      expect(accounts).toEqual([
+        getAddress(RAW_ADDRESS_1),
+        getAddress(RAW_ADDRESS_2),
+      ]);
     });
 
     it('should initialize SDK if not already initialized', async () => {
@@ -587,11 +595,11 @@ describe('MetaMaskEvmWalletConnector', () => {
       (MetaMaskSdkClient.init as jest.Mock).mockImplementation(async () => {
         (MetaMaskSdkClient.isInitialized as any) = true;
       });
-      mockSdk.accounts = ['0xabc'];
+      mockSdk.accounts = [RAW_ADDRESS_1];
 
       const accounts = await connector.getConnectedAccounts();
       expect(MetaMaskSdkClient.init).toHaveBeenCalled();
-      expect(accounts).toEqual(['0xabc']);
+      expect(accounts).toEqual([getAddress(RAW_ADDRESS_1)]);
     });
 
     it('should fall back to injected provider if SDK has no accounts after init', async () => {
@@ -599,7 +607,7 @@ describe('MetaMaskEvmWalletConnector', () => {
       mockSdk.accounts = [];
 
       const mockProvider = {
-        request: jest.fn().mockResolvedValue(['0xinjected']),
+        request: jest.fn().mockResolvedValue([RAW_ADDRESS_1]),
       };
       Object.defineProperty(connector, 'ethProviderHelper', {
         value: { getInstalledProvider: () => mockProvider },
@@ -610,7 +618,7 @@ describe('MetaMaskEvmWalletConnector', () => {
       expect(mockProvider.request).toHaveBeenCalledWith({
         method: 'eth_accounts',
       });
-      expect(accounts).toEqual(['0xinjected']);
+      expect(accounts).toEqual([getAddress(RAW_ADDRESS_1)]);
     });
 
     it('should return empty array if SDK has no accounts and no injected provider', async () => {
@@ -674,7 +682,9 @@ describe('MetaMaskEvmWalletConnector', () => {
         off: mockOff,
         selectedAccount: '0x123',
       };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockProvider,
+      );
 
       await connector.setupEventListeners();
 
@@ -682,9 +692,11 @@ describe('MetaMaskEvmWalletConnector', () => {
       mockOff.mockImplementation(() => {
         callOrder.push('teardown');
       });
-      (MetaMaskSdkClient.disconnect as jest.Mock).mockImplementation(async () => {
-        callOrder.push('disconnect');
-      });
+      (MetaMaskSdkClient.disconnect as jest.Mock).mockImplementation(
+        async () => {
+          callOrder.push('disconnect');
+        },
+      );
 
       await connector.endSession();
 
@@ -740,7 +752,7 @@ describe('MetaMaskEvmWalletConnector', () => {
     beforeEach(() => {
       extensionConnector = new MetaMaskEvmWalletConnector(walletConnectorProps);
       mockInjectedProvider = {
-        request: jest.fn().mockResolvedValue(['0xExtensionAccount']),
+        request: jest.fn().mockResolvedValue([RAW_ADDRESS_1]),
         on: jest.fn(),
         removeListener: jest.fn(),
       };
@@ -752,11 +764,15 @@ describe('MetaMaskEvmWalletConnector', () => {
       });
       Object.defineProperty(extensionConnector, 'ethProviderHelper', {
         value: {
-          eip6963ProviderLookup: jest.fn().mockReturnValue({ provider: mockInjectedProvider }),
+          eip6963ProviderLookup: jest
+            .fn()
+            .mockReturnValue({ provider: mockInjectedProvider }),
           getInstalledProvider: jest.fn().mockReturnValue(mockInjectedProvider),
           getAddress: jest.fn().mockResolvedValue('0xExtensionAccount'),
           findProvider: jest.fn().mockReturnValue(mockInjectedProvider),
-          _setupEventListeners: jest.fn().mockReturnValue({ tearDownEventListeners: jest.fn() }),
+          _setupEventListeners: jest
+            .fn()
+            .mockReturnValue({ tearDownEventListeners: jest.fn() }),
         },
         writable: true,
       });
@@ -776,7 +792,9 @@ describe('MetaMaskEvmWalletConnector', () => {
 
     it('should delegate setupEventListeners to parent when extension is installed', async () => {
       await extensionConnector.setupEventListeners();
-      expect(extensionConnector.ethProviderHelper._setupEventListeners).toHaveBeenCalled();
+      expect(
+        extensionConnector.ethProviderHelper._setupEventListeners,
+      ).toHaveBeenCalled();
       expect(MetaMaskSdkClient.getProvider).not.toHaveBeenCalled();
     });
 
@@ -785,7 +803,7 @@ describe('MetaMaskEvmWalletConnector', () => {
       expect(mockInjectedProvider.request).toHaveBeenCalledWith({
         method: 'eth_accounts',
       });
-      expect(accounts).toEqual(['0xExtensionAccount']);
+      expect(accounts).toEqual([getAddress(RAW_ADDRESS_1)]);
     });
 
     it('should delegate endSession to parent when extension is installed', async () => {
@@ -793,7 +811,9 @@ describe('MetaMaskEvmWalletConnector', () => {
       mockInjectedProvider.request.mockResolvedValue(undefined);
       Object.defineProperty(extensionConnector, 'ethProviderHelper', {
         value: {
-          eip6963ProviderLookup: jest.fn().mockReturnValue({ provider: mockInjectedProvider }),
+          eip6963ProviderLookup: jest
+            .fn()
+            .mockReturnValue({ provider: mockInjectedProvider }),
           getInstalledProvider: jest.fn().mockReturnValue(mockInjectedProvider),
           findProvider: jest.fn().mockReturnValue(mockInjectedProvider),
         },
@@ -815,7 +835,9 @@ describe('MetaMaskEvmWalletConnector', () => {
       });
 
       const mockSdkProvider = { selectedAccount: '0xSdk' };
-      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(mockSdkProvider);
+      (MetaMaskSdkClient.getProvider as jest.Mock).mockReturnValue(
+        mockSdkProvider,
+      );
 
       const result = extensionConnector.findProvider();
       expect(result).toBeDefined();
