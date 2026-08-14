@@ -59,8 +59,8 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
         evmNetworks: this.evmNetworks,
         dappName: 'Dynamic',
       });
-    } catch (error) {
-      logger.error('[MetaMaskEvmWalletConnector] SDK init failed:', error);
+    } catch {
+      // SDK init errors are already logged by MetaMaskSdkClient
     }
 
     this.walletConnectorEventsEmitter.emit(
@@ -146,6 +146,11 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     // SDK flow for QR code / mobile connections
     if (!MetaMaskSdkClient.isInitialized) {
       await this.init();
+    }
+
+    if (!MetaMaskSdkClient.isInitialized) {
+      // SDK init failed; the error has already been logged by MetaMaskSdkClient
+      return undefined;
     }
 
     if (!opts?.onDisplayUri) {

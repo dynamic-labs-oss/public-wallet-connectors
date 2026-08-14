@@ -56,6 +56,7 @@ export class MetaMaskSolanaSdkClient {
   private static multichainCore: MultichainCore | null = null;
   private static initPromise: Promise<void> | null = null;
   private static connectUri: string | null = null;
+  private static hasLoggedInitError = false;
 
   static isInitialized = false;
 
@@ -127,14 +128,26 @@ export class MetaMaskSolanaSdkClient {
 
       logger.debug('[MetaMaskSolanaSdkClient] init complete');
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      logger.error(
-        '[MetaMaskSolanaSdkClient] Failed to initialize:',
-        errorMessage,
-      );
+      MetaMaskSolanaSdkClient.logInitError(error);
       throw error;
     }
+  };
+
+  private static logInitError = (error: unknown): void => {
+    if (MetaMaskSolanaSdkClient.hasLoggedInitError) {
+      return;
+    }
+
+    MetaMaskSolanaSdkClient.hasLoggedInitError = true;
+
+    let errorMessage: string;
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else {
+      errorMessage = String(error);
+    }
+
+    logger.error('[MetaMaskSolanaSdkClient] Failed to initialize:', errorMessage);
   };
 
   static getWallet = (): StandardWallet | null => {
@@ -226,5 +239,6 @@ export class MetaMaskSolanaSdkClient {
     MetaMaskSolanaSdkClient.isInitialized = false;
     MetaMaskSolanaSdkClient.initPromise = null;
     MetaMaskSolanaSdkClient.connectUri = null;
+    MetaMaskSolanaSdkClient.hasLoggedInitError = false;
   };
 }

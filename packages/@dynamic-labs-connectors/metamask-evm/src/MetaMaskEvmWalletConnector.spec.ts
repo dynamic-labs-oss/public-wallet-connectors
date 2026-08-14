@@ -293,6 +293,19 @@ describe('MetaMaskEvmWalletConnector', () => {
         'metamask',
       );
     });
+
+    it('should not log an error when SDK init fails', async () => {
+      const { logger } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
+      (MetaMaskSdkClient.init as jest.Mock).mockRejectedValue(
+        new Error('SDK failed'),
+      );
+
+      await connector.init();
+
+      expect(logger.error).not.toHaveBeenCalled();
+    });
   });
 
   describe('findProvider', () => {
@@ -575,6 +588,22 @@ describe('MetaMaskEvmWalletConnector', () => {
       );
 
       await expect(connector.getAddress()).rejects.toThrow('User rejected');
+    });
+
+    it('should return undefined without logging when SDK init fails', async () => {
+      const { logger } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
+      (MetaMaskSdkClient.isInitialized as any) = false;
+      (MetaMaskSdkClient.init as jest.Mock).mockRejectedValue(
+        new Error('SDK failed'),
+      );
+
+      const address = await connector.getAddress();
+
+      expect(address).toBeUndefined();
+      expect(MetaMaskSdkClient.connect).not.toHaveBeenCalled();
+      expect(logger.error).not.toHaveBeenCalled();
     });
   });
 

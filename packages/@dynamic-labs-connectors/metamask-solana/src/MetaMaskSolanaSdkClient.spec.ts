@@ -1,4 +1,5 @@
 import { MetaMaskSolanaSdkClient } from './MetaMaskSolanaSdkClient.js';
+import { createSolanaClient } from '@metamask/connect-solana';
 
 const mockConnect = jest.fn();
 const mockClientDisconnect = jest.fn();
@@ -55,6 +56,11 @@ describe('MetaMaskSolanaSdkClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     MetaMaskSolanaSdkClient.reset();
+    createSolanaClient.mockImplementation(async () => ({
+      getWallet: mockGetWallet,
+      core: mockCore,
+      disconnect: mockClientDisconnect,
+    }));
     mockGetWallet.mockReturnValue(mockWallet);
     mockConnect.mockResolvedValue({
       accounts: [{ address: 'SoLaNa1234' }],
@@ -84,6 +90,19 @@ describe('MetaMaskSolanaSdkClient', () => {
       expect(createSolanaClient).toHaveBeenCalledTimes(1);
     });
 
+    it('should deduplicate concurrent init calls', async () => {
+      const { createSolanaClient } = await import(
+        '@metamask/connect-solana'
+      );
+
+      await Promise.all([
+        MetaMaskSolanaSdkClient.init({}),
+        MetaMaskSolanaSdkClient.init({}),
+      ]);
+
+      expect(createSolanaClient).toHaveBeenCalledTimes(1);
+    });
+
     it('should set isInitialized to true', async () => {
       expect(MetaMaskSolanaSdkClient.isInitialized).toBe(false);
       await MetaMaskSolanaSdkClient.init({});
@@ -110,6 +129,57 @@ describe('MetaMaskSolanaSdkClient', () => {
     it('should register a display_uri listener on core for tracking connect URI', async () => {
       await MetaMaskSolanaSdkClient.init({});
       expect(mockCore.on).toHaveBeenCalledWith('display_uri', expect.any(Function));
+    });
+
+    it('should log init error only once across retries', async () => {
+      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      createSolanaClient.mockRejectedValue(new Error('StorageErr: failed'));
+
+      await expect(MetaMaskSolanaSdkClient.init({})).rejects.toThrow(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(1);
+      expect(logger.error).toHaveBeenCalledWith(
+        '[MetaMaskSolanaSdkClient] Failed to initialize:',
+        'StorageErr: failed',
+      );
+
+      await expect(MetaMaskSolanaSdkClient.init({})).rejects.toThrow(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(1);
+    });
+
+    it('should log init error again after reset', async () => {
+      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      createSolanaClient.mockRejectedValue(new Error('StorageErr: failed'));
+
+      await expect(MetaMaskSolanaSdkClient.init({})).rejects.toThrow(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(1);
+
+      MetaMaskSolanaSdkClient.reset();
+      createSolanaClient.mockRejectedValue(new Error('StorageErr: failed'));
+
+      await expect(MetaMaskSolanaSdkClient.init({})).rejects.toThrow(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(2);
+    });
+
+    it('should log init error for non-Error rejection', async () => {
+      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      createSolanaClient.mockRejectedValue('StorageErr: failed');
+
+      await expect(MetaMaskSolanaSdkClient.init({})).rejects.toBe(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(1);
+      expect(logger.error).toHaveBeenCalledWith(
+        '[MetaMaskSolanaSdkClient] Failed to initialize:',
+        'StorageErr: failed',
+      );
     });
   });
 
@@ -161,6 +231,20 @@ describe('MetaMaskSolanaSdkClient', () => {
       expect(mockConnect).toHaveBeenCalledWith({ silent: false });
       expect(address).toBe('SoLaNa1234');
     });
+
+    it('should throw when wallet does not support standard:connect', async () => {
+      const unsupportedWallet = {
+        ...mockWallet,
+        accounts: [] as typeof mockWallet.accounts,
+        features: {},
+      };
+      mockGetWallet.mockReturnValue(unsupportedWallet);
+      await MetaMaskSolanaSdkClient.init({});
+
+      await expect(MetaMaskSolanaSdkClient.connect()).rejects.toThrow(
+        '[MetaMaskSolanaSdkClient] Wallet does not support standard:connect',
+      );
+    });
   });
 
   describe('disconnect', () => {
@@ -174,6 +258,15 @@ describe('MetaMaskSolanaSdkClient', () => {
       await MetaMaskSolanaSdkClient.init({});
       await MetaMaskSolanaSdkClient.disconnect();
       expect(mockClientDisconnect).toHaveBeenCalled();
+    });
+
+    it('should swallow disconnect errors', async () => {
+      mockClientDisconnect.mockRejectedValue(new Error('disconnect failed'));
+      await MetaMaskSolanaSdkClient.init({});
+
+      await expect(
+        MetaMaskSolanaSdkClient.disconnect(),
+      ).resolves.not.toThrow();
     });
   });
 

@@ -78,8 +78,8 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
       await MetaMaskSolanaSdkClient.init({
         dappName: 'Dynamic',
       });
-    } catch (error) {
-      logger.error('[MetaMaskSolanaWalletConnector] SDK init failed:', error);
+    } catch {
+      // SDK init errors are already logged by MetaMaskSolanaSdkClient
     }
 
     this.walletConnectorEventsEmitter.emit(
