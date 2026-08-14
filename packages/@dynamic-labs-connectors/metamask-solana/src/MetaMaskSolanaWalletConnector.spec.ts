@@ -190,6 +190,19 @@ describe('MetaMaskSolanaWalletConnector', () => {
         'metamasksol',
       );
     });
+
+    it('should not log an error when init fails', async () => {
+      const { logger } = jest.requireMock(
+        '@dynamic-labs/wallet-connector-core',
+      );
+      (MetaMaskSolanaSdkClient.init as jest.Mock).mockRejectedValue(
+        new Error('init failed'),
+      );
+
+      await connector.init();
+
+      expect(logger.error).not.toHaveBeenCalled();
+    });
   });
 
   describe('setupEventListeners', () => {

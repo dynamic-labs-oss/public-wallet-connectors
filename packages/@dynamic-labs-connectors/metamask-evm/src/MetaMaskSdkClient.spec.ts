@@ -156,6 +156,57 @@ describe('MetaMaskSdkClient', () => {
       await MetaMaskSdkClient.init(mockConfig);
       expect(MetaMaskSdkClient.isInitialized).toBe(true);
     });
+
+    it('should log init error only once across retries', async () => {
+      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      mockCreateEVMClient.mockRejectedValue(new Error('StorageErr: failed'));
+
+      await expect(MetaMaskSdkClient.init(mockConfig)).rejects.toThrow(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(1);
+      expect(logger.error).toHaveBeenCalledWith(
+        '[MetaMaskSdkClient] Failed to initialize:',
+        'StorageErr: failed',
+      );
+
+      await expect(MetaMaskSdkClient.init(mockConfig)).rejects.toThrow(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(1);
+    });
+
+    it('should log init error again after reset', async () => {
+      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      mockCreateEVMClient.mockRejectedValue(new Error('StorageErr: failed'));
+
+      await expect(MetaMaskSdkClient.init(mockConfig)).rejects.toThrow(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(1);
+
+      MetaMaskSdkClient.reset();
+      mockCreateEVMClient.mockRejectedValue(new Error('StorageErr: failed'));
+
+      await expect(MetaMaskSdkClient.init(mockConfig)).rejects.toThrow(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(2);
+    });
+
+    it('should log init error for non-Error rejection', async () => {
+      const { logger } = jest.requireMock('@dynamic-labs/wallet-connector-core');
+      mockCreateEVMClient.mockRejectedValue('StorageErr: failed');
+
+      await expect(MetaMaskSdkClient.init(mockConfig)).rejects.toBe(
+        'StorageErr: failed',
+      );
+      expect(logger.error).toHaveBeenCalledTimes(1);
+      expect(logger.error).toHaveBeenCalledWith(
+        '[MetaMaskSdkClient] Failed to initialize:',
+        'StorageErr: failed',
+      );
+    });
   });
 
   describe('getInstance', () => {

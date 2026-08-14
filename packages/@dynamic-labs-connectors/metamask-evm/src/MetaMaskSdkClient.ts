@@ -50,6 +50,7 @@ export class MetaMaskSdkClient {
   private static displayUriListeners = new Set<(uri: string) => void>();
   private static latestDisplayUri: string | null = null;
   private static connectUri: string | null = null;
+  private static hasLoggedInitError = false;
 
   static isInitialized = false;
 
@@ -72,54 +73,76 @@ export class MetaMaskSdkClient {
   private static doInit = async (
     config: MetaMaskSdkClientConfig,
   ): Promise<void> => {
-    const supportedNetworks = buildSupportedNetworks(config.evmNetworks);
-    if (Object.keys(supportedNetworks).length === 0) {
-      throw new Error(
-        '[MetaMaskSdkClient] No valid networks with RPC URLs provided',
-      );
+    try {
+      const supportedNetworks = buildSupportedNetworks(config.evmNetworks);
+      if (Object.keys(supportedNetworks).length === 0) {
+        throw new Error(
+          '[MetaMaskSdkClient] No valid networks with RPC URLs provided',
+        );
+      }
+
+      const { createEVMClient } = await import('@metamask/connect-evm');
+      const sdk = await createEVMClient({
+        dapp: {
+          name: config.dappName ?? 'Dynamic',
+          url: config.dappUrl ?? PlatformService.getOrigin(),
+        },
+        analytics: { integrationType: 'dynamic' },
+        api: {
+          supportedNetworks: supportedNetworks as Record<HexChainId, string>,
+        },
+        skipAutoAnnounce: true,
+        ui: { headless: true, preferExtension: true },
+        mobile: {
+          preferredOpenLink: openDeepLink,
+          useDeeplink: true,
+        },
+        eventHandlers: {
+          displayUri: (uri: string) => {
+            MetaMaskSdkClient.latestDisplayUri = uri;
+            if (uri.includes('://connect')) {
+              MetaMaskSdkClient.connectUri = uri;
+            }
+            for (const listener of MetaMaskSdkClient.displayUriListeners) {
+              listener(uri);
+            }
+          },
+          connect: () => {
+            MetaMaskSdkClient.latestDisplayUri = null;
+            MetaMaskSdkClient.connectUri = null;
+          },
+          disconnect: () => {
+            MetaMaskSdkClient.latestDisplayUri = null;
+            MetaMaskSdkClient.connectUri = null;
+          },
+        },
+        debug: false,
+      });
+
+      MetaMaskSdkClient.instance = sdk;
+      MetaMaskSdkClient.isInitialized = true;
+      logger.debug('[MetaMaskSdkClient] init complete', { status: sdk.status });
+    } catch (error) {
+      MetaMaskSdkClient.logInitError(error);
+      throw error;
+    }
+  };
+
+  private static logInitError = (error: unknown): void => {
+    if (MetaMaskSdkClient.hasLoggedInitError) {
+      return;
     }
 
-    const { createEVMClient } = await import('@metamask/connect-evm');
-    const sdk = await createEVMClient({
-      dapp: {
-        name: config.dappName ?? 'Dynamic',
-        url: config.dappUrl ?? PlatformService.getOrigin(),
-      },
-      analytics: { integrationType: 'dynamic' },
-      api: {
-        supportedNetworks: supportedNetworks as Record<HexChainId, string>,
-      },
-      skipAutoAnnounce: true,
-      ui: { headless: true, preferExtension: true },
-      mobile: {
-        preferredOpenLink: openDeepLink,
-        useDeeplink: true,
-      },
-      eventHandlers: {
-        displayUri: (uri: string) => {
-          MetaMaskSdkClient.latestDisplayUri = uri;
-          if (uri.includes('://connect')) {
-            MetaMaskSdkClient.connectUri = uri;
-          }
-          for (const listener of MetaMaskSdkClient.displayUriListeners) {
-            listener(uri);
-          }
-        },
-        connect: () => {
-          MetaMaskSdkClient.latestDisplayUri = null;
-          MetaMaskSdkClient.connectUri = null;
-        },
-        disconnect: () => {
-          MetaMaskSdkClient.latestDisplayUri = null;
-          MetaMaskSdkClient.connectUri = null;
-        },
-      },
-      debug: false,
-    });
+    MetaMaskSdkClient.hasLoggedInitError = true;
 
-    MetaMaskSdkClient.instance = sdk;
-    MetaMaskSdkClient.isInitialized = true;
-    logger.debug('[MetaMaskSdkClient] init complete', { status: sdk.status });
+    let errorMessage: string;
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else {
+      errorMessage = String(error);
+    }
+
+    logger.error('[MetaMaskSdkClient] Failed to initialize:', errorMessage);
   };
 
   static getInstance = (): MetamaskConnectEVM => {
@@ -229,5 +252,6 @@ export class MetaMaskSdkClient {
     MetaMaskSdkClient.displayUriListeners.clear();
     MetaMaskSdkClient.latestDisplayUri = null;
     MetaMaskSdkClient.connectUri = null;
+    MetaMaskSdkClient.hasLoggedInitError = false;
   };
 }
