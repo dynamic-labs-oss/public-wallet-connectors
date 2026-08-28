@@ -129,6 +129,10 @@ describe('MetaMaskEvmWalletConnector', () => {
     it('should set overrideKey to metamask', () => {
       expect(connector.overrideKey).toBe('metamask');
     });
+
+    it('should expose the constructor props via this.props', () => {
+      expect(connector.props).toBe(walletConnectorProps);
+    });
   });
 
   describe('isInstalledOnBrowser', () => {

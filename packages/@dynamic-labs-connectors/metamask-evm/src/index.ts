@@ -2,12 +2,18 @@ import {
   type WalletConnectorConstructor,
   type WalletConnectorsMethod,
 } from '@dynamic-labs/wallet-connector-core';
-import { type EthereumWalletConnectorOpts } from '@dynamic-labs/ethereum-core';
 
-import { MetaMaskEvmWalletConnector } from './MetaMaskEvmWalletConnector.js';
-import { type MetaMaskStorageClient } from './MetaMaskStorageClient.js';
+import {
+  MetaMaskEvmWalletConnector,
+  type MetaMaskEvmConnectorOpts,
+  type MetaMaskEvmWalletConnectorOpts,
+} from './MetaMaskEvmWalletConnector.js';
 
-export { MetaMaskEvmWalletConnector } from './MetaMaskEvmWalletConnector.js';
+export {
+  MetaMaskEvmWalletConnector,
+  type MetaMaskEvmConnectorOpts,
+  type MetaMaskEvmWalletConnectorOpts,
+} from './MetaMaskEvmWalletConnector.js';
 export type { MetaMaskStorageClient } from './MetaMaskStorageClient.js';
 
 export const MetaMaskEvmWalletConnectors = (
@@ -16,10 +22,6 @@ export const MetaMaskEvmWalletConnectors = (
 ): WalletConnectorConstructor[] => [
   MetaMaskEvmWalletConnector as unknown as WalletConnectorConstructor,
 ];
-
-export type MetaMaskEvmConnectorOpts = {
-  storage?: MetaMaskStorageClient;
-};
 
 /**
  * Like `MetaMaskEvmWalletConnectors`, but takes a custom storage backend
@@ -31,7 +33,7 @@ export const createMetaMaskEvmConnector = (
 ): WalletConnectorsMethod => {
   return () => [
     class extends MetaMaskEvmWalletConnector {
-      constructor(props: EthereumWalletConnectorOpts) {
+      constructor(props: MetaMaskEvmWalletConnectorOpts) {
         super({
           ...props,
           ...metamaskOpts,
