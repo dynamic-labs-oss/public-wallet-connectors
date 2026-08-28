@@ -4,14 +4,9 @@ import {
 } from '@metamask/connect-multichain';
 
 /**
- * Storage contract for persisting MetaMask Connect state (session cache,
- * anonymous analytics id, extension id, transport type, debug flag) through
- * a host-provided backend, in place of `@metamask/connect-multichain`'s own
- * default storage (IndexedDB on web, raw AsyncStorage on React Native).
- *
- * Structurally mirrors `@metamask/connect-multichain`'s `StoreClient`, minus
- * its `TransportType` enum (kept as plain strings here), so a host app can
- * implement this without depending on MetaMask's package directly --
+ * Custom storage backend for MetaMask Connect state. Mirrors
+ * `@metamask/connect-multichain`'s `StoreClient` (minus its `TransportType`
+ * enum) so consumers don't need that package's types directly --
  * `toMultichainStoreClient` bridges the two.
  */
 export interface MetaMaskStorageClient {

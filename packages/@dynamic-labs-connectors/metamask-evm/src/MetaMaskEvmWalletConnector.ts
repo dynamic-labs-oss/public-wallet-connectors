@@ -56,12 +56,8 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     );
 
     try {
-      // `metamaskStorage` isn't part of any core wallet-connector prop type --
-      // it's an optional field a host app's wallet connector options can carry
-      // through the untyped `constructorProps` bag (see wallet-connector-core's
-      // `WalletConnectorBase.constructorProps`), letting it inject a custom
-      // storage backend for MetaMask Connect's session/analytics state without
-      // this connector depending on that host's storage implementation.
+      // Optional custom storage backend, passed through the untyped
+      // `constructorProps` bag (see `WalletConnectorBase.constructorProps`).
       const metamaskStorage = this.constructorProps?.metamaskStorage as
         | MetaMaskStorageClient
         | undefined;

@@ -17,11 +17,7 @@ export interface MetaMaskSdkClientConfig {
   evmNetworks: EvmNetwork[];
   dappName?: string;
   dappUrl?: string;
-  /**
-   * Custom storage backend for MetaMask Connect's session/analytics state
-   * (see `MetaMaskStorageClient`). Optional -- omitting it keeps the SDK's
-   * own default storage (IndexedDB on web, AsyncStorage on React Native).
-   */
+  /** Custom storage backend for MetaMask Connect (see `MetaMaskStorageClient`). */
   storage?: MetaMaskStorageClient;
 }
 
@@ -96,14 +92,10 @@ export class MetaMaskSdkClient {
     };
 
     if (config.storage) {
-      // `createEVMClient`'s own options type doesn't expose a `storage`
-      // field, so there's no way to hand it a custom storage backend
-      // directly. `@metamask/connect-multichain`'s `createMultichainClient`
-      // is a global singleton factory though: `storage` (like `dapp`) is not
-      // a mergeable option, so pre-seeding the singleton here -- before
-      // `createEVMClient` runs -- means the `createMultichainClient` call it
-      // makes internally just merges its (mergeable) options onto our
-      // already-created instance and leaves our `storage` in place.
+      // createEVMClient doesn't expose a `storage` option, so we pre-seed
+      // the connect-multichain singleton ourselves; `storage` isn't
+      // mergeable, so createEVMClient's own internal call just merges its
+      // other options in and leaves this in place.
       const { createMultichainClient } = await import(
         '@metamask/connect-multichain'
       );

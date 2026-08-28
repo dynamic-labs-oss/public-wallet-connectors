@@ -31,10 +31,8 @@ export function toNumericChainId(chainId: number | string): number {
 }
 
 /**
- * Convert a hex-chain-id supported-networks map (the format MetaMask
- * Connect/EVM's `createEVMClient` takes) to the CAIP-2 format
- * `@metamask/connect-multichain`'s `createMultichainClient` expects --
- * mirroring the conversion `createEVMClient` does internally.
+ * Convert a hex-chain-id supportedNetworks map to the CAIP-2 format
+ * `createMultichainClient` expects.
  */
 export function toCaipSupportedNetworks(
   supportedNetworks: Record<HexChainId, string>,
