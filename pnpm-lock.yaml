@@ -314,6 +314,9 @@ importers:
       '@metamask/connect-evm':
         specifier: 2.1.0
         version: 2.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@metamask/connect-multichain':
+        specifier: 1.1.0
+        version: 1.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       viem:
         specifier: ^2.21.55
         version: 2.52.2(bufferutil@4.0.9)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@4.0.5)
