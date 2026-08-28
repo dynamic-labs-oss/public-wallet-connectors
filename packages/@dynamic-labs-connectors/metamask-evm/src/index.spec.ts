@@ -1,6 +1,7 @@
 import {
   MetaMaskEvmWalletConnectors,
   MetaMaskEvmWalletConnector,
+  createMetaMaskEvmConnector,
 } from './index.js';
 
 // Mock the connect-evm module before it's imported
@@ -59,6 +60,44 @@ describe('index exports', () => {
     it('should export the connector class', () => {
       expect(MetaMaskEvmWalletConnector).toBeDefined();
       expect(typeof MetaMaskEvmWalletConnector).toBe('function');
+    });
+  });
+
+  describe('createMetaMaskEvmConnector', () => {
+    it('should return a WalletConnectorsMethod', () => {
+      const method = createMetaMaskEvmConnector();
+      expect(typeof method).toBe('function');
+
+      const result = method();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(1);
+    });
+
+    it('should merge the given storage into the constructor props', () => {
+      const storage = { platform: 'rn' } as any;
+      const [ConnectorClass] = createMetaMaskEvmConnector({ storage })();
+
+      const instance = new ConnectorClass({ evmNetworks: [] } as any);
+      expect((instance as any).constructorProps.storage).toBe(storage);
+    });
+
+    it('should preserve the base props passed at construction time', () => {
+      const [ConnectorClass] = createMetaMaskEvmConnector({
+        storage: {} as any,
+      })();
+
+      const evmNetworks = [{ chainId: 1 }];
+      const instance = new ConnectorClass({ evmNetworks } as any);
+      expect((instance as any).constructorProps.evmNetworks).toBe(
+        evmNetworks,
+      );
+    });
+
+    it('should default to no storage when called with no opts', () => {
+      const [ConnectorClass] = createMetaMaskEvmConnector()();
+
+      const instance = new ConnectorClass({ evmNetworks: [] } as any);
+      expect((instance as any).constructorProps.storage).toBeUndefined();
     });
   });
 });

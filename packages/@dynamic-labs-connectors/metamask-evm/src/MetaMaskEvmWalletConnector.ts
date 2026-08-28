@@ -8,9 +8,18 @@ import {
   EthereumInjectedConnector,
   type IEthereum,
 } from '@dynamic-labs/ethereum';
+import { type EthereumWalletConnectorOpts } from '@dynamic-labs/ethereum-core';
 
 import { MetaMaskSdkClient } from './MetaMaskSdkClient.js';
+import { type MetaMaskStorageClient } from './MetaMaskStorageClient.js';
 import { checksumAddresses, toNumericChainId } from './utils.js';
+
+export type MetaMaskEvmConnectorOpts = {
+  storage?: MetaMaskStorageClient;
+};
+
+export type MetaMaskEvmWalletConnectorOpts = EthereumWalletConnectorOpts &
+  MetaMaskEvmConnectorOpts;
 
 /**
  * MetaMask wallet connector for Dynamic.
@@ -24,6 +33,13 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
   override overrideKey = 'metamask';
   override canConnectViaQrCode = true;
   override canHandleMultipleConnections = false;
+
+  props: MetaMaskEvmWalletConnectorOpts;
+
+  constructor(props: MetaMaskEvmWalletConnectorOpts) {
+    super(props);
+    this.props = props;
+  }
 
   /**
    * Returns true only when a real MetaMask injected provider is present.
@@ -58,6 +74,7 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
       await MetaMaskSdkClient.init({
         evmNetworks: this.evmNetworks,
         dappName: 'Dynamic',
+        storage: this.props.storage,
       });
     } catch (error) {
       logger.error('[MetaMaskEvmWalletConnector] SDK init failed:', error);

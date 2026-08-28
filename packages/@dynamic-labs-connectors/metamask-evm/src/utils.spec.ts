@@ -4,6 +4,7 @@ import {
   toNumericChainId,
   extractRpcUrl,
   buildSupportedNetworks,
+  toCaipSupportedNetworks,
   checksumAddresses,
   type EvmNetwork,
 } from './utils.js';
@@ -141,6 +142,30 @@ describe('utils', () => {
       ];
       expect(buildSupportedNetworks(networks)).toEqual({
         '0x1': 'https://eth.rpc',
+      });
+    });
+  });
+
+  describe('toCaipSupportedNetworks', () => {
+    it('should return empty object for empty input', () => {
+      expect(toCaipSupportedNetworks({})).toEqual({});
+    });
+
+    it('should convert a single hex chain ID to CAIP-2', () => {
+      expect(toCaipSupportedNetworks({ '0x1': 'https://eth.rpc' })).toEqual({
+        'eip155:1': 'https://eth.rpc',
+      });
+    });
+
+    it('should convert multiple hex chain IDs to CAIP-2', () => {
+      expect(
+        toCaipSupportedNetworks({
+          '0x1': 'https://eth.rpc',
+          '0x89': 'https://polygon.rpc',
+        }),
+      ).toEqual({
+        'eip155:1': 'https://eth.rpc',
+        'eip155:137': 'https://polygon.rpc',
       });
     });
   });

@@ -3,7 +3,12 @@ import { logger } from '@dynamic-labs/wallet-connector-core';
 import { PlatformService } from '@dynamic-labs/utils';
 
 import {
+  type MetaMaskStorageClient,
+  toMultichainStoreClient,
+} from './MetaMaskStorageClient.js';
+import {
   buildSupportedNetworks,
+  toCaipSupportedNetworks,
   type HexChainId,
   type EvmNetwork,
 } from './utils.js';
@@ -12,6 +17,8 @@ export interface MetaMaskSdkClientConfig {
   evmNetworks: EvmNetwork[];
   dappName?: string;
   dappUrl?: string;
+  /** Custom storage backend for MetaMask Connect (see `MetaMaskStorageClient`). */
+  storage?: MetaMaskStorageClient;
 }
 
 /**
@@ -79,12 +86,29 @@ export class MetaMaskSdkClient {
       );
     }
 
+    const dapp = {
+      name: config.dappName ?? 'Dynamic',
+      url: config.dappUrl ?? PlatformService.getOrigin(),
+    };
+
+    if (config.storage) {
+      // createEVMClient doesn't expose a `storage` option, so we pre-seed
+      // the connect-multichain singleton ourselves; `storage` isn't
+      // mergeable, so createEVMClient's own internal call just merges its
+      // other options in and leaves this in place.
+      const { createMultichainClient } = await import(
+        '@metamask/connect-multichain'
+      );
+      await createMultichainClient({
+        dapp,
+        api: { supportedNetworks: toCaipSupportedNetworks(supportedNetworks) },
+        storage: toMultichainStoreClient(config.storage),
+      });
+    }
+
     const { createEVMClient } = await import('@metamask/connect-evm');
     const sdk = await createEVMClient({
-      dapp: {
-        name: config.dappName ?? 'Dynamic',
-        url: config.dappUrl ?? PlatformService.getOrigin(),
-      },
+      dapp,
       analytics: { integrationType: 'dynamic' },
       api: {
         supportedNetworks: supportedNetworks as Record<HexChainId, string>,

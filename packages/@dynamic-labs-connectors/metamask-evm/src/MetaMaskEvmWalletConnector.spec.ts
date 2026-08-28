@@ -129,6 +129,10 @@ describe('MetaMaskEvmWalletConnector', () => {
     it('should set overrideKey to metamask', () => {
       expect(connector.overrideKey).toBe('metamask');
     });
+
+    it('should expose the constructor props via this.props', () => {
+      expect(connector.props).toBe(walletConnectorProps);
+    });
   });
 
   describe('isInstalledOnBrowser', () => {
@@ -235,6 +239,32 @@ describe('MetaMaskEvmWalletConnector', () => {
           evmNetworks: mockEvmNetworks,
           dappName: 'Dynamic',
         }),
+      );
+    });
+
+    it('should forward constructorProps.storage to MetaMaskSdkClient.init', async () => {
+      const storage = { platform: 'rn' } as any;
+      const storageConnector = new MetaMaskEvmWalletConnector({
+        ...walletConnectorProps,
+        storage,
+      } as any);
+      Object.defineProperty(storageConnector, 'evmNetworks', {
+        value: mockEvmNetworks,
+        writable: true,
+      });
+
+      await storageConnector.init();
+
+      expect(MetaMaskSdkClient.init).toHaveBeenCalledWith(
+        expect.objectContaining({ storage }),
+      );
+    });
+
+    it('should pass storage as undefined when constructorProps has no storage', async () => {
+      await connector.init();
+
+      expect(MetaMaskSdkClient.init).toHaveBeenCalledWith(
+        expect.objectContaining({ storage: undefined }),
       );
     });
 
