@@ -238,6 +238,32 @@ describe('MetaMaskEvmWalletConnector', () => {
       );
     });
 
+    it('should forward constructorProps.metamaskStorage to MetaMaskSdkClient.init', async () => {
+      const metamaskStorage = { platform: 'rn' } as any;
+      const storageConnector = new MetaMaskEvmWalletConnector({
+        ...walletConnectorProps,
+        metamaskStorage,
+      } as any);
+      Object.defineProperty(storageConnector, 'evmNetworks', {
+        value: mockEvmNetworks,
+        writable: true,
+      });
+
+      await storageConnector.init();
+
+      expect(MetaMaskSdkClient.init).toHaveBeenCalledWith(
+        expect.objectContaining({ storage: metamaskStorage }),
+      );
+    });
+
+    it('should pass storage as undefined when constructorProps has no metamaskStorage', async () => {
+      await connector.init();
+
+      expect(MetaMaskSdkClient.init).toHaveBeenCalledWith(
+        expect.objectContaining({ storage: undefined }),
+      );
+    });
+
     it('should emit connectorInitStarted with overrideKey before initializing', async () => {
       let initCalledWhen: 'before' | 'after' | undefined;
       (MetaMaskSdkClient.init as jest.Mock).mockImplementation(() => {

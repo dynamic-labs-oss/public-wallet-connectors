@@ -2,12 +2,20 @@ import {
   MetaMaskSdkClient,
   type MetaMaskSdkClientConfig,
 } from './MetaMaskSdkClient.js';
+import { type MetaMaskStorageClient } from './MetaMaskStorageClient.js';
 
 const mockCreateEVMClient = jest.fn();
+const mockCreateMultichainClient = jest.fn();
 const mockOpenURL = jest.fn();
 
 jest.mock('@metamask/connect-evm', () => ({
   createEVMClient: (...args: unknown[]) => mockCreateEVMClient(...args),
+}));
+
+jest.mock('@metamask/connect-multichain', () => ({
+  createMultichainClient: (...args: unknown[]) =>
+    mockCreateMultichainClient(...args),
+  getTransportType: (value: string) => value,
 }));
 
 jest.mock('@dynamic-labs/wallet-connector-core', () => ({
@@ -66,6 +74,7 @@ describe('MetaMaskSdkClient', () => {
     mockSdk.selectedChainId = '0x1';
 
     mockCreateEVMClient.mockResolvedValue(mockSdk);
+    mockCreateMultichainClient.mockResolvedValue(undefined);
   });
 
   describe('constructor', () => {
@@ -155,6 +164,74 @@ describe('MetaMaskSdkClient', () => {
       mockCreateEVMClient.mockResolvedValue(mockSdk);
       await MetaMaskSdkClient.init(mockConfig);
       expect(MetaMaskSdkClient.isInitialized).toBe(true);
+    });
+  });
+
+  describe('storage', () => {
+    const mockStorage: jest.Mocked<MetaMaskStorageClient> = {
+      platform: 'rn',
+      get: jest.fn(),
+      set: jest.fn(),
+      delete: jest.fn(),
+      getAnonId: jest.fn(),
+      setAnonId: jest.fn(),
+      removeAnonId: jest.fn(),
+      getExtensionId: jest.fn(),
+      setExtensionId: jest.fn(),
+      removeExtensionId: jest.fn(),
+      getTransportType: jest.fn(),
+      setTransportType: jest.fn(),
+      removeTransportType: jest.fn(),
+      getDebug: jest.fn(),
+    };
+
+    it('should not call createMultichainClient when no storage is configured', async () => {
+      await MetaMaskSdkClient.init(mockConfig);
+      expect(mockCreateMultichainClient).not.toHaveBeenCalled();
+    });
+
+    it('should pre-seed the multichain singleton with the storage client', async () => {
+      await MetaMaskSdkClient.init({ ...mockConfig, storage: mockStorage });
+
+      expect(mockCreateMultichainClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dapp: { name: 'Test DApp', url: 'https://test.com' },
+          api: {
+            supportedNetworks: {
+              'eip155:1': 'https://eth.rpc',
+              'eip155:137': 'https://polygon.rpc',
+            },
+          },
+          storage: expect.objectContaining({
+            adapter: expect.objectContaining({ platform: 'rn' }),
+          }),
+        }),
+      );
+    });
+
+    it('should pre-seed the multichain singleton before calling createEVMClient', async () => {
+      const callOrder: string[] = [];
+      mockCreateMultichainClient.mockImplementation(() => {
+        callOrder.push('createMultichainClient');
+        return Promise.resolve();
+      });
+      mockCreateEVMClient.mockImplementation(() => {
+        callOrder.push('createEVMClient');
+        return Promise.resolve(mockSdk);
+      });
+
+      await MetaMaskSdkClient.init({ ...mockConfig, storage: mockStorage });
+
+      expect(callOrder).toEqual(['createMultichainClient', 'createEVMClient']);
+    });
+
+    it('should still call createEVMClient without a storage field', async () => {
+      await MetaMaskSdkClient.init({ ...mockConfig, storage: mockStorage });
+
+      expect(mockCreateEVMClient).toHaveBeenCalledTimes(1);
+      expect(mockCreateEVMClient.mock.calls[0][0]).not.toHaveProperty(
+        'storage',
+      );
     });
   });
 

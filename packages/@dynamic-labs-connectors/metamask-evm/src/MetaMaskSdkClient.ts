@@ -3,7 +3,12 @@ import { logger } from '@dynamic-labs/wallet-connector-core';
 import { PlatformService } from '@dynamic-labs/utils';
 
 import {
+  type MetaMaskStorageClient,
+  toMultichainStoreClient,
+} from './MetaMaskStorageClient.js';
+import {
   buildSupportedNetworks,
+  toCaipSupportedNetworks,
   type HexChainId,
   type EvmNetwork,
 } from './utils.js';
@@ -12,6 +17,12 @@ export interface MetaMaskSdkClientConfig {
   evmNetworks: EvmNetwork[];
   dappName?: string;
   dappUrl?: string;
+  /**
+   * Custom storage backend for MetaMask Connect's session/analytics state
+   * (see `MetaMaskStorageClient`). Optional -- omitting it keeps the SDK's
+   * own default storage (IndexedDB on web, AsyncStorage on React Native).
+   */
+  storage?: MetaMaskStorageClient;
 }
 
 /**
@@ -79,12 +90,33 @@ export class MetaMaskSdkClient {
       );
     }
 
+    const dapp = {
+      name: config.dappName ?? 'Dynamic',
+      url: config.dappUrl ?? PlatformService.getOrigin(),
+    };
+
+    if (config.storage) {
+      // `createEVMClient`'s own options type doesn't expose a `storage`
+      // field, so there's no way to hand it a custom storage backend
+      // directly. `@metamask/connect-multichain`'s `createMultichainClient`
+      // is a global singleton factory though: `storage` (like `dapp`) is not
+      // a mergeable option, so pre-seeding the singleton here -- before
+      // `createEVMClient` runs -- means the `createMultichainClient` call it
+      // makes internally just merges its (mergeable) options onto our
+      // already-created instance and leaves our `storage` in place.
+      const { createMultichainClient } = await import(
+        '@metamask/connect-multichain'
+      );
+      await createMultichainClient({
+        dapp,
+        api: { supportedNetworks: toCaipSupportedNetworks(supportedNetworks) },
+        storage: toMultichainStoreClient(config.storage),
+      });
+    }
+
     const { createEVMClient } = await import('@metamask/connect-evm');
     const sdk = await createEVMClient({
-      dapp: {
-        name: config.dappName ?? 'Dynamic',
-        url: config.dappUrl ?? PlatformService.getOrigin(),
-      },
+      dapp,
       analytics: { integrationType: 'dynamic' },
       api: {
         supportedNetworks: supportedNetworks as Record<HexChainId, string>,

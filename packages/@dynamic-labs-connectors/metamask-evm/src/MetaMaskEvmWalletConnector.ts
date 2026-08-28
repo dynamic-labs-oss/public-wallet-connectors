@@ -10,6 +10,7 @@ import {
 } from '@dynamic-labs/ethereum';
 
 import { MetaMaskSdkClient } from './MetaMaskSdkClient.js';
+import { type MetaMaskStorageClient } from './MetaMaskStorageClient.js';
 import { checksumAddresses, toNumericChainId } from './utils.js';
 
 /**
@@ -55,9 +56,20 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     );
 
     try {
+      // `metamaskStorage` isn't part of any core wallet-connector prop type --
+      // it's an optional field a host app's wallet connector options can carry
+      // through the untyped `constructorProps` bag (see wallet-connector-core's
+      // `WalletConnectorBase.constructorProps`), letting it inject a custom
+      // storage backend for MetaMask Connect's session/analytics state without
+      // this connector depending on that host's storage implementation.
+      const metamaskStorage = this.constructorProps?.metamaskStorage as
+        | MetaMaskStorageClient
+        | undefined;
+
       await MetaMaskSdkClient.init({
         evmNetworks: this.evmNetworks,
         dappName: 'Dynamic',
+        storage: metamaskStorage,
       });
     } catch (error) {
       logger.error('[MetaMaskEvmWalletConnector] SDK init failed:', error);

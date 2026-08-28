@@ -31,6 +31,25 @@ export function toNumericChainId(chainId: number | string): number {
 }
 
 /**
+ * Convert a hex-chain-id supported-networks map (the format MetaMask
+ * Connect/EVM's `createEVMClient` takes) to the CAIP-2 format
+ * `@metamask/connect-multichain`'s `createMultichainClient` expects --
+ * mirroring the conversion `createEVMClient` does internally.
+ */
+export function toCaipSupportedNetworks(
+  supportedNetworks: Record<HexChainId, string>,
+): Record<CaipChainId, string> {
+  const result: Partial<Record<CaipChainId, string>> = {};
+
+  for (const [hexChainId, url] of Object.entries(supportedNetworks)) {
+    const caipChainId: CaipChainId = `eip155:${toNumericChainId(hexChainId)}`;
+    result[caipChainId] = url;
+  }
+
+  return result as Record<CaipChainId, string>;
+}
+
+/**
  * Checksum raw eth_accounts/RPC addresses (EIP-55). Dynamic's own
  * `EthereumWallet.address` is always checksummed, so callers that compare
  * connected accounts against it (e.g. wagmi-connector's `isAuthorized`)
