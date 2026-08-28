@@ -173,16 +173,6 @@ describe('MetaMaskSdkClient', () => {
       get: jest.fn(),
       set: jest.fn(),
       delete: jest.fn(),
-      getAnonId: jest.fn(),
-      setAnonId: jest.fn(),
-      removeAnonId: jest.fn(),
-      getExtensionId: jest.fn(),
-      setExtensionId: jest.fn(),
-      removeExtensionId: jest.fn(),
-      getTransportType: jest.fn(),
-      setTransportType: jest.fn(),
-      removeTransportType: jest.fn(),
-      getDebug: jest.fn(),
     };
 
     it('should not call createMultichainClient when no storage is configured', async () => {

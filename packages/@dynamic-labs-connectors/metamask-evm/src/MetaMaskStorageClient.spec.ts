@@ -4,6 +4,8 @@ import {
 } from './MetaMaskStorageClient.js';
 
 const mockGetTransportType = jest.fn((value: string) => value);
+const UUID_V4_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 jest.mock('@metamask/connect-multichain', () => ({
   getTransportType: (value: string) => mockGetTransportType(value),
@@ -22,16 +24,6 @@ describe('MetaMaskStorageClient', () => {
         get: jest.fn().mockResolvedValue(null),
         set: jest.fn().mockResolvedValue(undefined),
         delete: jest.fn().mockResolvedValue(undefined),
-        getAnonId: jest.fn().mockResolvedValue('anon-id'),
-        setAnonId: jest.fn().mockResolvedValue(undefined),
-        removeAnonId: jest.fn().mockResolvedValue(undefined),
-        getExtensionId: jest.fn().mockResolvedValue(null),
-        setExtensionId: jest.fn().mockResolvedValue(undefined),
-        removeExtensionId: jest.fn().mockResolvedValue(undefined),
-        getTransportType: jest.fn().mockResolvedValue(null),
-        setTransportType: jest.fn().mockResolvedValue(undefined),
-        removeTransportType: jest.fn().mockResolvedValue(undefined),
-        getDebug: jest.fn().mockResolvedValue(null),
       };
     });
 
@@ -53,44 +45,69 @@ describe('MetaMaskStorageClient', () => {
       expect(storage.delete).toHaveBeenCalledWith('key');
     });
 
-    it('should proxy anonId methods', async () => {
+    it('should generate and persist a UUID anonId when none is stored', async () => {
+      storage.get.mockResolvedValue(null);
+
       const storeClient = toMultichainStoreClient(storage);
+      const anonId = await storeClient.getAnonId();
 
-      await expect(storeClient.getAnonId()).resolves.toBe('anon-id');
-
-      await storeClient.setAnonId('new-anon-id');
-      expect(storage.setAnonId).toHaveBeenCalledWith('new-anon-id');
-
-      await storeClient.removeAnonId();
-      expect(storage.removeAnonId).toHaveBeenCalled();
+      expect(anonId).toMatch(UUID_V4_REGEX);
+      expect(storage.set).toHaveBeenCalledWith('metamask_anon_id', anonId);
     });
 
-    it('should proxy extensionId methods', async () => {
+    it('should reuse an existing anonId without generating a new one', async () => {
+      storage.get.mockResolvedValue('existing-anon-id');
+
+      const storeClient = toMultichainStoreClient(storage);
+      const anonId = await storeClient.getAnonId();
+
+      expect(anonId).toBe('existing-anon-id');
+      expect(storage.set).not.toHaveBeenCalled();
+    });
+
+    it('should proxy setAnonId/removeAnonId to the fixed key', async () => {
+      const storeClient = toMultichainStoreClient(storage);
+
+      await storeClient.setAnonId('new-anon-id');
+      expect(storage.set).toHaveBeenCalledWith(
+        'metamask_anon_id',
+        'new-anon-id',
+      );
+
+      await storeClient.removeAnonId();
+      expect(storage.delete).toHaveBeenCalledWith('metamask_anon_id');
+    });
+
+    it('should proxy extensionId methods to the fixed key', async () => {
       const storeClient = toMultichainStoreClient(storage);
 
       await storeClient.getExtensionId();
-      expect(storage.getExtensionId).toHaveBeenCalled();
+      expect(storage.get).toHaveBeenCalledWith('metamask_extension_id');
 
       await storeClient.setExtensionId('ext-id');
-      expect(storage.setExtensionId).toHaveBeenCalledWith('ext-id');
+      expect(storage.set).toHaveBeenCalledWith(
+        'metamask_extension_id',
+        'ext-id',
+      );
 
       await storeClient.removeExtensionId();
-      expect(storage.removeExtensionId).toHaveBeenCalled();
+      expect(storage.delete).toHaveBeenCalledWith('metamask_extension_id');
     });
 
     it('should map a stored transport type string through getTransportType', async () => {
-      storage.getTransportType.mockResolvedValue('browser');
+      storage.get.mockResolvedValue('browser');
       mockGetTransportType.mockReturnValue('browser');
 
       const storeClient = toMultichainStoreClient(storage);
       const result = await storeClient.getTransportType();
 
+      expect(storage.get).toHaveBeenCalledWith('metamask_transport_type');
       expect(mockGetTransportType).toHaveBeenCalledWith('browser');
       expect(result).toBe('browser');
     });
 
     it('should return null without calling getTransportType when nothing is stored', async () => {
-      storage.getTransportType.mockResolvedValue(null);
+      storage.get.mockResolvedValue(null);
 
       const storeClient = toMultichainStoreClient(storage);
       const result = await storeClient.getTransportType();
@@ -99,21 +116,20 @@ describe('MetaMaskStorageClient', () => {
       expect(result).toBeNull();
     });
 
-    it('should proxy setTransportType/removeTransportType', async () => {
+    it('should proxy setTransportType/removeTransportType to the fixed key', async () => {
       const storeClient = toMultichainStoreClient(storage);
 
       await storeClient.setTransportType('mwp');
-      expect(storage.setTransportType).toHaveBeenCalledWith('mwp');
+      expect(storage.set).toHaveBeenCalledWith('metamask_transport_type', 'mwp');
 
       await storeClient.removeTransportType();
-      expect(storage.removeTransportType).toHaveBeenCalled();
+      expect(storage.delete).toHaveBeenCalledWith('metamask_transport_type');
     });
 
-    it('should proxy getDebug', async () => {
-      storage.getDebug.mockResolvedValue('metamask-sdk:*');
-
+    it('should never persist debug and always resolve null', async () => {
       const storeClient = toMultichainStoreClient(storage);
-      await expect(storeClient.getDebug()).resolves.toBe('metamask-sdk:*');
+      await expect(storeClient.getDebug()).resolves.toBeNull();
+      expect(storage.get).not.toHaveBeenCalled();
     });
   });
 });
