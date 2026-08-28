@@ -56,16 +56,15 @@ export class MetaMaskEvmWalletConnector extends EthereumInjectedConnector {
     );
 
     try {
-      // Optional custom storage backend, passed through the untyped
-      // `constructorProps` bag (see `WalletConnectorBase.constructorProps`).
-      const metamaskStorage = this.constructorProps?.metamaskStorage as
+      // Optional custom storage backend -- see `createMetaMaskEvmConnector`.
+      const storage = this.constructorProps?.storage as
         | MetaMaskStorageClient
         | undefined;
 
       await MetaMaskSdkClient.init({
         evmNetworks: this.evmNetworks,
         dappName: 'Dynamic',
-        storage: metamaskStorage,
+        storage,
       });
     } catch (error) {
       logger.error('[MetaMaskEvmWalletConnector] SDK init failed:', error);

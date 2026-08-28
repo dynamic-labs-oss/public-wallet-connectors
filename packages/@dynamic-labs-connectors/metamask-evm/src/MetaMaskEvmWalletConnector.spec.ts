@@ -238,11 +238,11 @@ describe('MetaMaskEvmWalletConnector', () => {
       );
     });
 
-    it('should forward constructorProps.metamaskStorage to MetaMaskSdkClient.init', async () => {
-      const metamaskStorage = { platform: 'rn' } as any;
+    it('should forward constructorProps.storage to MetaMaskSdkClient.init', async () => {
+      const storage = { platform: 'rn' } as any;
       const storageConnector = new MetaMaskEvmWalletConnector({
         ...walletConnectorProps,
-        metamaskStorage,
+        storage,
       } as any);
       Object.defineProperty(storageConnector, 'evmNetworks', {
         value: mockEvmNetworks,
@@ -252,11 +252,11 @@ describe('MetaMaskEvmWalletConnector', () => {
       await storageConnector.init();
 
       expect(MetaMaskSdkClient.init).toHaveBeenCalledWith(
-        expect.objectContaining({ storage: metamaskStorage }),
+        expect.objectContaining({ storage }),
       );
     });
 
-    it('should pass storage as undefined when constructorProps has no metamaskStorage', async () => {
+    it('should pass storage as undefined when constructorProps has no storage', async () => {
       await connector.init();
 
       expect(MetaMaskSdkClient.init).toHaveBeenCalledWith(
