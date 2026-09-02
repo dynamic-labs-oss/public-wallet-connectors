@@ -235,9 +235,13 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
       return undefined;
     }
 
-    return createWalletStandardAdapter(wallet, () => {
-      const network = this.getSelectedNetwork();
-      return network?.cluster ?? 'mainnet';
-    });
+    return createWalletStandardAdapter(
+      wallet,
+      () => {
+        const network = this.getSelectedNetwork();
+        return network?.cluster ?? 'mainnet';
+      },
+      () => MetaMaskSolanaSdkClient.getSelectedAccount(),
+    );
   }
 }
