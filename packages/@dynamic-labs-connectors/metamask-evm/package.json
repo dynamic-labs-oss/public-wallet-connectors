@@ -21,14 +21,14 @@
     }
   },
   "dependencies": {
-    "@dynamic-labs/utils": "^4.88.7",
+    "@dynamic-labs/utils": "^4.88.7 || ^5.0.0",
     "@metamask/connect-evm": "2.1.0",
     "@metamask/connect-multichain": "1.1.0"
   },
   "peerDependencies": {
-    "@dynamic-labs/ethereum": "^4.88.7",
-    "@dynamic-labs/ethereum-core": "^4.88.7",
-    "@dynamic-labs/wallet-connector-core": "^4.88.7",
+    "@dynamic-labs/ethereum": "^4.88.7 || ^5.0.0",
+    "@dynamic-labs/ethereum-core": "^4.88.7 || ^5.0.0",
+    "@dynamic-labs/wallet-connector-core": "^4.88.7 || ^5.0.0",
     "viem": "^2.21.55"
   }
 }
