@@ -10,6 +10,7 @@ import {
   type ISolana,
 } from '@dynamic-labs/solana-core';
 
+import { isMetaMaskInjected } from './isMetaMaskInjected.js';
 import { MetaMaskSolanaSdkClient } from './MetaMaskSolanaSdkClient.js';
 import type { WalletAccount } from './types.js';
 import { createWalletStandardAdapter } from './WalletStandardAdapter.js';
@@ -59,14 +60,7 @@ export class MetaMaskSolanaWalletConnector extends SolanaWalletConnector {
    * Returns true only when a real MetaMask injected provider is present.
    */
   override isInstalledOnBrowser(): boolean {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    const ethereum = (window as unknown as Record<string, unknown>)[
-      'ethereum'
-    ] as { isMetaMask?: boolean } | undefined;
-    return Boolean(ethereum?.isMetaMask);
+    return isMetaMaskInjected();
   }
 
   override async init(): Promise<void> {

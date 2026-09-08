@@ -134,6 +134,17 @@ describe('MetaMaskSolanaWalletConnector', () => {
       (global as any).window = { ethereum: { isMetaMask: false } };
       expect(connector.isInstalledOnBrowser()).toBe(false);
     });
+
+    it('should return false for a provider selection router mirroring MetaMask flags', () => {
+      (global as any).window = {
+        ethereum: {
+          addProvider: jest.fn(),
+          isMetaMask: true,
+          selectExtension: jest.fn(),
+        },
+      };
+      expect(connector.isInstalledOnBrowser()).toBe(false);
+    });
   });
 
   describe('init', () => {
