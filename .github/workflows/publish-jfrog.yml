@@ -1,0 +1,111 @@
+name: Publish Current Version to JFrog
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or commit whose current package versions should be published
+        default: main
+      distTag:
+        description: npm dist-tag to publish under
+        default: latest
+
+jobs:
+  publish-jfrog:
+    environment: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 1
+      - name: Setup
+        uses: ./.github/actions/setup-node
+      - name: Build
+        shell: bash
+        run: |-
+          pnpm exec nx run-many --target=build --projects="@dynamic-labs-connectors/*"
+      - name: Authenticate with the JFrog registry
+        shell: bash
+        env:
+          JFROG_TOKEN: ${{ secrets.JFROG_PUBLISHING_TOKEN }}
+        run: |-
+          set -eo pipefail
+          if [ -z "$JFROG_TOKEN" ]; then
+            echo "::error::JFROG_PUBLISHING_TOKEN is not configured for the release environment"
+            exit 1
+          fi
+          npm config set "//fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/:_authToken=${JFROG_TOKEN}"
+      - name: Publish Packages
+        shell: bash
+        env:
+          DIST_TAG: ${{ inputs.distTag }}
+          JFROG_REGISTRY: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/
+        run: |-
+          set -eo pipefail
+
+          if [ -z "$DIST_TAG" ]; then
+            echo "::error::distTag input must not be empty"
+            exit 1
+          fi
+          echo "Publishing with dist-tag: $DIST_TAG"
+
+          FAILED=()
+          SKIPPED=()
+          PUBLISHED=()
+
+          for pkg_dir in dist/packages/@dynamic-labs-connectors/*/; do
+            [ -d "$pkg_dir" ] || continue
+            [ -f "$pkg_dir/package.json" ] || continue
+
+            PACKAGE_NAME=$(node -p "require('./${pkg_dir}package.json').name")
+            PACKAGE_VERSION=$(node -p "require('./${pkg_dir}package.json').version")
+            PACKAGE_PRIVATE=$(node -p "!!require('./${pkg_dir}package.json').private")
+
+            echo "::group::${PACKAGE_NAME}@${PACKAGE_VERSION}"
+
+            if [ "$PACKAGE_PRIVATE" = "true" ]; then
+              echo "Package ${PACKAGE_NAME} is private, skipping"
+              SKIPPED+=("${PACKAGE_NAME}@${PACKAGE_VERSION} (private)")
+              echo "::endgroup::"
+              continue
+            fi
+
+            if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version --registry="$JFROG_REGISTRY" >/dev/null 2>&1; then
+              echo "Already published to ${JFROG_REGISTRY}, skipping"
+              SKIPPED+=("${PACKAGE_NAME}@${PACKAGE_VERSION} (${JFROG_REGISTRY})")
+            else
+              echo "Publishing ${PACKAGE_NAME}@${PACKAGE_VERSION} to ${JFROG_REGISTRY}"
+              if (cd "$pkg_dir" && npm publish --tag "$DIST_TAG" --registry="$JFROG_REGISTRY"); then
+                PUBLISHED+=("${PACKAGE_NAME}@${PACKAGE_VERSION} (${JFROG_REGISTRY})")
+              else
+                echo "::error::Failed to publish ${PACKAGE_NAME}@${PACKAGE_VERSION} to ${JFROG_REGISTRY}"
+                FAILED+=("${PACKAGE_NAME}@${PACKAGE_VERSION} (${JFROG_REGISTRY})")
+              fi
+            fi
+            echo "::endgroup::"
+          done
+
+          echo ""
+          echo "Publish summary:"
+          echo "  Published: ${#PUBLISHED[@]}"
+          for p in "${PUBLISHED[@]}"; do echo "    - $p"; done
+          echo "  Skipped:   ${#SKIPPED[@]}"
+          for p in "${SKIPPED[@]}"; do echo "    - $p"; done
+          echo "  Failed:    ${#FAILED[@]}"
+          for p in "${FAILED[@]}"; do echo "    - $p"; done
+
+          if [ "${#FAILED[@]}" -gt 0 ]; then
+            echo "::error::${#FAILED[@]} publish(es) failed"
+            exit 1
+          fi
+      - name: Print install hint
+        env:
+          JFROG_REGISTRY: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/
+        shell: bash
+        run: |-
+          echo "Install with:"
+          echo "  npm install <package>@<version> --registry=${JFROG_REGISTRY}"
