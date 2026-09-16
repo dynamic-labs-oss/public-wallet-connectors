@@ -114,11 +114,13 @@ runs:
       run: |-
         npm install -g npm@11
         echo "npm: $(npm --version)"
-    - name: Publish Packages to npm
+    - name: Publish Packages
       if: "${{ inputs.type == 'publish' }}"
       shell: bash
       env:
         DIST_TAG: ${{ steps.createrelease.outputs.distTag }}
+        NPMJS_REGISTRY: https://registry.npmjs.org
+        JFROG_REGISTRY: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/
       run: |-
         set -eo pipefail
         if [ -z "$DIST_TAG" ]; then
@@ -126,6 +128,13 @@ runs:
           exit 1
         fi
         echo "Publishing with dist-tag: $DIST_TAG"
+
+        REGISTRIES=("$NPMJS_REGISTRY")
+        if [ "${JFROG_ENABLED:-false}" = "true" ]; then
+          REGISTRIES+=("$JFROG_REGISTRY")
+        else
+          echo "::warning::No JFrog token provided, publishing to npmjs only"
+        fi
 
         FAILED=()
         SKIPPED=()
@@ -140,20 +149,21 @@ runs:
 
           echo "::group::${PACKAGE_NAME}@${PACKAGE_VERSION}"
 
-          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
-            echo "Already published, skipping"
-            SKIPPED+=("${PACKAGE_NAME}@${PACKAGE_VERSION}")
-            echo "::endgroup::"
-            continue
-          fi
+          for registry in "${REGISTRIES[@]}"; do
+            if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version --registry="$registry" >/dev/null 2>&1; then
+              echo "Already published to ${registry}, skipping"
+              SKIPPED+=("${PACKAGE_NAME}@${PACKAGE_VERSION} (${registry})")
+              continue
+            fi
 
-          echo "Publishing ${PACKAGE_NAME}@${PACKAGE_VERSION}"
-          if (cd "$pkg_dir" && npm publish --tag "$DIST_TAG" --registry=https://registry.npmjs.org); then
-            PUBLISHED+=("${PACKAGE_NAME}@${PACKAGE_VERSION}")
-          else
-            echo "::error::Failed to publish ${PACKAGE_NAME}@${PACKAGE_VERSION}"
-            FAILED+=("${PACKAGE_NAME}@${PACKAGE_VERSION}")
-          fi
+            echo "Publishing ${PACKAGE_NAME}@${PACKAGE_VERSION} to ${registry}"
+            if (cd "$pkg_dir" && npm publish --tag "$DIST_TAG" --registry="$registry"); then
+              PUBLISHED+=("${PACKAGE_NAME}@${PACKAGE_VERSION} (${registry})")
+            else
+              echo "::error::Failed to publish ${PACKAGE_NAME}@${PACKAGE_VERSION} to ${registry}"
+              FAILED+=("${PACKAGE_NAME}@${PACKAGE_VERSION} (${registry})")
+            fi
+          done
           echo "::endgroup::"
         done
 
@@ -167,7 +177,7 @@ runs:
         for p in "${FAILED[@]}"; do echo "    - $p"; done
 
         if [ "${#FAILED[@]}" -gt 0 ]; then
-          echo "::error::${#FAILED[@]} package(s) failed to publish"
+          echo "::error::${#FAILED[@]} publish(es) failed"
           exit 1
         fi
     - name: Bump Version
