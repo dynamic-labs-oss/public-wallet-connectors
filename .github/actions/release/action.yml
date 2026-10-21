@@ -14,7 +14,7 @@ inputs:
   version: # determines what node version to install
     required: false
     description: node js version
-    default: 20
+    default: 22.23.4
   preId:
     description: The prerelease name (Only required if using a bump starting with `pre`)
     default: alpha
@@ -41,7 +41,7 @@ runs:
   using: composite
   steps:
     - name: Checkout ${{ inputs.ref }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         ref: ${{ inputs.ref }}
         fetch-depth: 0
@@ -65,12 +65,12 @@ runs:
         ${GITHUB_ACTION_PATH}/src/commands/get-release-commit.ts
     - name: Checkout Release Commit (${{ steps.commit.outputs.sha }})
       if: "${{ inputs.type == 'publish' }}"
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         ref: ${{ steps.releasecommits.outputs.toSha }}
         fetch-depth: 1
         clean: true
-    - uses: nrwl/nx-set-shas@v4
+    - uses: nrwl/nx-set-shas@v5
     - name: Install Packages for Release Commit
       if: "${{ inputs.type == 'publish' }}"
       shell: bash
@@ -105,9 +105,8 @@ runs:
         pnpm exec nx run-many --target=build --projects="@dynamic-labs-connectors/*"
     - name: Upgrade npm for OIDC Trusted Publishing
       # npm's Trusted Publishing (OIDC) support was stabilized in npm 11.5.1.
-      # Node 20 ships with npm ~10.8, so we upgrade before calling `npm publish`.
-      # Pin to the 11.x line: npm@latest now points at 12.x, which drops Node 20
-      # (engines: node ^22.22.2 || ...), whereas all of 11.x still supports it
+      # The npm bundled with Node 20/22 is 10.x, so we upgrade before calling `npm publish`.
+      # Pin to the 11.x line so the npm major cannot change underneath the publish step
       # (engines: node ^20.17.0 || >=22.9.0).
       if: "${{ inputs.type == 'publish' }}"
       shell: bash
