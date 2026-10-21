@@ -20,7 +20,7 @@ See [Contributing](CONTRIBUTING.md)
 
 ### Prerequisites
 
-- Node.js v20
+- Node.js v22.23.4 (see `.nvmrc`)
 - pnpm
 
 ### Setup
