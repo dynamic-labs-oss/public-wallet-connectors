@@ -1,6 +1,6 @@
 {
   "name": "@dynamic-labs-connectors/metamask-solana",
-  "version": "4.7.1",
+  "version": "4.8.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dynamic-labs-oss/public-wallet-connectors.git",
