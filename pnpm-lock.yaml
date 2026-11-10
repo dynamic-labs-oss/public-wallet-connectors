@@ -1358,10 +1358,10 @@ packages:
     engines: {node: '>=12'}
 
   '@dynamic-labs-sdk/assert-package-version@1.48.0':
-    resolution: {integrity: sha512-G4SFF4i0mXuinwqIanbSyeRQIhzm3P/9jz4HHxfrBVjMY3updandgXkfz/R2bZ/OXoxEJ0ADdfeSAnyAj1woxQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-sdk/assert-package-version/-/@dynamic-labs-sdk/assert-package-version-1.48.0.tgz}
+    resolution: {integrity: sha512-G4SFF4i0mXuinwqIanbSyeRQIhzm3P/9jz4HHxfrBVjMY3updandgXkfz/R2bZ/OXoxEJ0ADdfeSAnyAj1woxQ==, tarball: https://registry.npmjs.org/@dynamic-labs-sdk/assert-package-version/-/@dynamic-labs-sdk/assert-package-version-1.48.0.tgz}
 
   '@dynamic-labs-sdk/client@1.48.0':
-    resolution: {integrity: sha512-FJL9UvccLpYuQAO7g7/3wikNCVQTWNTTw85YBB4Q9A+6cuO+sx6ufhpx53f3VP0yipqZP3SR48ZP2rWrO9CR7Q==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-sdk/client/-/@dynamic-labs-sdk/client-1.48.0.tgz}
+    resolution: {integrity: sha512-FJL9UvccLpYuQAO7g7/3wikNCVQTWNTTw85YBB4Q9A+6cuO+sx6ufhpx53f3VP0yipqZP3SR48ZP2rWrO9CR7Q==, tarball: https://registry.npmjs.org/@dynamic-labs-sdk/client/-/@dynamic-labs-sdk/client-1.48.0.tgz}
     peerDependencies:
       '@react-native-async-storage/async-storage': ^2.2.0
       react-native: '>=0.73.6'
@@ -1381,125 +1381,125 @@ packages:
         optional: true
 
   '@dynamic-labs-wallet/browser-wallet-client@1.1.49':
-    resolution: {integrity: sha512-gyVeHVSilJgmVECWNVP6NPyuy0AuzcH/VM2sfnoCvlelgnKvONiZ8V71QDLL0jwhgrKwS+vRJXotk8+XV4v/qA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-wallet/browser-wallet-client/-/@dynamic-labs-wallet/browser-wallet-client-1.1.49.tgz}
+    resolution: {integrity: sha512-gyVeHVSilJgmVECWNVP6NPyuy0AuzcH/VM2sfnoCvlelgnKvONiZ8V71QDLL0jwhgrKwS+vRJXotk8+XV4v/qA==, tarball: https://registry.npmjs.org/@dynamic-labs-wallet/browser-wallet-client/-/@dynamic-labs-wallet/browser-wallet-client-1.1.49.tgz}
 
   '@dynamic-labs-wallet/browser-wallet-client@1.1.57':
-    resolution: {integrity: sha512-VDDyXM9X63OTNu7XRwxOsxuNDEwnUMc07HuIy1cAzEKlq00O/YDfUqbSCzSsg8bTeCOR5ThAncWOzI2k+enxaQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-wallet/browser-wallet-client/-/@dynamic-labs-wallet/browser-wallet-client-1.1.57.tgz}
+    resolution: {integrity: sha512-VDDyXM9X63OTNu7XRwxOsxuNDEwnUMc07HuIy1cAzEKlq00O/YDfUqbSCzSsg8bTeCOR5ThAncWOzI2k+enxaQ==, tarball: https://registry.npmjs.org/@dynamic-labs-wallet/browser-wallet-client/-/@dynamic-labs-wallet/browser-wallet-client-1.1.57.tgz}
 
   '@dynamic-labs-wallet/core@1.1.49':
-    resolution: {integrity: sha512-qSGkbtpcpU+DIx6PXW/i1DIPY8UztUHKfXjyCjqrGUAHGxp+mQvmHg+tUYpeuyEBQUprb10mDGy8xzM3V8SpuQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-wallet/core/-/@dynamic-labs-wallet/core-1.1.49.tgz}
+    resolution: {integrity: sha512-qSGkbtpcpU+DIx6PXW/i1DIPY8UztUHKfXjyCjqrGUAHGxp+mQvmHg+tUYpeuyEBQUprb10mDGy8xzM3V8SpuQ==, tarball: https://registry.npmjs.org/@dynamic-labs-wallet/core/-/@dynamic-labs-wallet/core-1.1.49.tgz}
     peerDependencies:
       '@dynamic-labs-wallet/forward-mpc-client': 2.0.2
 
   '@dynamic-labs-wallet/core@1.1.57':
-    resolution: {integrity: sha512-Bm/kkCYJs6fJYaWCCC445RBL5Xbll2+W0peSAWzz1NUpcRLLaEg//gjh0fca8cB0IycDFpzKKciu2Q9g5bZOwg==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-wallet/core/-/@dynamic-labs-wallet/core-1.1.57.tgz}
+    resolution: {integrity: sha512-Bm/kkCYJs6fJYaWCCC445RBL5Xbll2+W0peSAWzz1NUpcRLLaEg//gjh0fca8cB0IycDFpzKKciu2Q9g5bZOwg==, tarball: https://registry.npmjs.org/@dynamic-labs-wallet/core/-/@dynamic-labs-wallet/core-1.1.57.tgz}
     peerDependencies:
       '@dynamic-labs-wallet/forward-mpc-client': 2.0.2
 
   '@dynamic-labs-wallet/forward-mpc-client@1.0.2':
-    resolution: {integrity: sha512-Rv2B7yI3AbrZvFM6eZLzDV9T/47iWm5LTmjOvqaCZSW34IYAQRYv7HQp2e/DITBoBXDvmu9Qv1zNbthcSU4RuQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-wallet/forward-mpc-client/-/@dynamic-labs-wallet/forward-mpc-client-1.0.2.tgz}
+    resolution: {integrity: sha512-Rv2B7yI3AbrZvFM6eZLzDV9T/47iWm5LTmjOvqaCZSW34IYAQRYv7HQp2e/DITBoBXDvmu9Qv1zNbthcSU4RuQ==, tarball: https://registry.npmjs.org/@dynamic-labs-wallet/forward-mpc-client/-/@dynamic-labs-wallet/forward-mpc-client-1.0.2.tgz}
     peerDependencies:
       '@dynamic-labs-wallet/primitives': '>=0.0.336 || 0.0.1'
 
   '@dynamic-labs-wallet/forward-mpc-client@2.0.2':
-    resolution: {integrity: sha512-DUdwqhYTEGoz3wMW4PmOl4tyw5IkTGB3n3KAgLMM6UkDWPsYzH5C4hkjbb6ZQdsHqF99kmoU5gsMcylJ41bYLA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-wallet/forward-mpc-client/-/@dynamic-labs-wallet/forward-mpc-client-2.0.2.tgz}
+    resolution: {integrity: sha512-DUdwqhYTEGoz3wMW4PmOl4tyw5IkTGB3n3KAgLMM6UkDWPsYzH5C4hkjbb6ZQdsHqF99kmoU5gsMcylJ41bYLA==, tarball: https://registry.npmjs.org/@dynamic-labs-wallet/forward-mpc-client/-/@dynamic-labs-wallet/forward-mpc-client-2.0.2.tgz}
     peerDependencies:
       '@dynamic-labs-wallet/primitives': '>=0.0.336 || 0.0.1'
 
   '@dynamic-labs-wallet/forward-mpc-shared@0.7.2':
-    resolution: {integrity: sha512-C5ugG0QNL1FNoFNCo3A2Hz3h1boycoC6S5jh5GoQmVTz7/MNKAgsnYRyd/xC7a9UIiZtwr6vttXvTLxMnx/q4A==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-wallet/forward-mpc-shared/-/@dynamic-labs-wallet/forward-mpc-shared-0.7.2.tgz}
+    resolution: {integrity: sha512-C5ugG0QNL1FNoFNCo3A2Hz3h1boycoC6S5jh5GoQmVTz7/MNKAgsnYRyd/xC7a9UIiZtwr6vttXvTLxMnx/q4A==, tarball: https://registry.npmjs.org/@dynamic-labs-wallet/forward-mpc-shared/-/@dynamic-labs-wallet/forward-mpc-shared-0.7.2.tgz}
     peerDependencies:
       '@dynamic-labs-wallet/primitives': '>=0.0.336 || 0.0.1'
 
   '@dynamic-labs-wallet/primitives@1.1.49':
-    resolution: {integrity: sha512-soYgORbckUfQeVjxu61SpNwR7kpVt8MVmGRuz/gwE8s7dTv+y4C0vO+XqCrkFD/Ujyi78TjCQeqc2OHLCKQekQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-wallet/primitives/-/@dynamic-labs-wallet/primitives-1.1.49.tgz}
+    resolution: {integrity: sha512-soYgORbckUfQeVjxu61SpNwR7kpVt8MVmGRuz/gwE8s7dTv+y4C0vO+XqCrkFD/Ujyi78TjCQeqc2OHLCKQekQ==, tarball: https://registry.npmjs.org/@dynamic-labs-wallet/primitives/-/@dynamic-labs-wallet/primitives-1.1.49.tgz}
 
   '@dynamic-labs-wallet/primitives@1.1.57':
-    resolution: {integrity: sha512-vI2m7Ex/3ptwcBFfvnX2kjL6OsSik+SnZzyR50sCx4oQjHt69sFa57PHVtRf5S1xAQOtzKdYq1slpWaYF47EQw==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs-wallet/primitives/-/@dynamic-labs-wallet/primitives-1.1.57.tgz}
+    resolution: {integrity: sha512-vI2m7Ex/3ptwcBFfvnX2kjL6OsSik+SnZzyR50sCx4oQjHt69sFa57PHVtRf5S1xAQOtzKdYq1slpWaYF47EQw==, tarball: https://registry.npmjs.org/@dynamic-labs-wallet/primitives/-/@dynamic-labs-wallet/primitives-1.1.57.tgz}
 
   '@dynamic-labs/assert-package-version@5.15.1':
-    resolution: {integrity: sha512-dAJ3uxpsDoJw1pnP/Fwe6XKNEReLpvAQmXql2EEmP+EDeHlJYQ2yXINBY/MZlik3cp2QMvV057w7by65/ZA6zQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/assert-package-version/-/@dynamic-labs/assert-package-version-5.15.1.tgz}
+    resolution: {integrity: sha512-dAJ3uxpsDoJw1pnP/Fwe6XKNEReLpvAQmXql2EEmP+EDeHlJYQ2yXINBY/MZlik3cp2QMvV057w7by65/ZA6zQ==, tarball: https://registry.npmjs.org/@dynamic-labs/assert-package-version/-/@dynamic-labs/assert-package-version-5.15.1.tgz}
 
   '@dynamic-labs/bitcoin@5.15.1':
-    resolution: {integrity: sha512-TiPcPKauJcJYL+tVhXoC2Cwcub7o5avyuB13AgC0GQ70YKN2fxCx7cQjD5fbyvXRBuNb4nJ7NVpDfxKOr21IgA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/bitcoin/-/@dynamic-labs/bitcoin-5.15.1.tgz}
+    resolution: {integrity: sha512-TiPcPKauJcJYL+tVhXoC2Cwcub7o5avyuB13AgC0GQ70YKN2fxCx7cQjD5fbyvXRBuNb4nJ7NVpDfxKOr21IgA==, tarball: https://registry.npmjs.org/@dynamic-labs/bitcoin/-/@dynamic-labs/bitcoin-5.15.1.tgz}
 
   '@dynamic-labs/ethereum-core@5.15.1':
-    resolution: {integrity: sha512-KWdZcIPRZQrBU0IFomjaZoINCawsosiJ1j+a0aBAsR/JNG26FthnzeEw7VQCDgJHNXY518Y6oGIgMtFY+r47AQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/ethereum-core/-/@dynamic-labs/ethereum-core-5.15.1.tgz}
+    resolution: {integrity: sha512-KWdZcIPRZQrBU0IFomjaZoINCawsosiJ1j+a0aBAsR/JNG26FthnzeEw7VQCDgJHNXY518Y6oGIgMtFY+r47AQ==, tarball: https://registry.npmjs.org/@dynamic-labs/ethereum-core/-/@dynamic-labs/ethereum-core-5.15.1.tgz}
     peerDependencies:
       viem: ^2.45.3
 
   '@dynamic-labs/ethereum-gasless-core@5.15.1':
-    resolution: {integrity: sha512-W8+JyvBsHoAYs0QJgTmya4sd2mSzpX0TWob4ilXow8YTFj6V7m43IXvx7aqQ88WLJY3Djr0J3jZpIshamC0WIA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/ethereum-gasless-core/-/@dynamic-labs/ethereum-gasless-core-5.15.1.tgz}
+    resolution: {integrity: sha512-W8+JyvBsHoAYs0QJgTmya4sd2mSzpX0TWob4ilXow8YTFj6V7m43IXvx7aqQ88WLJY3Djr0J3jZpIshamC0WIA==, tarball: https://registry.npmjs.org/@dynamic-labs/ethereum-gasless-core/-/@dynamic-labs/ethereum-gasless-core-5.15.1.tgz}
     peerDependencies:
       viem: ^2.45.3
 
   '@dynamic-labs/ethereum@5.15.1':
-    resolution: {integrity: sha512-srbGurDtILpf9Ss3MNqBPUU7AtKvfMJz84FvifZchokOFXRG9Epgy3pwwgGXDjdEGs8F0tk9O/hSG/aQ5WrLAw==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/ethereum/-/@dynamic-labs/ethereum-5.15.1.tgz}
+    resolution: {integrity: sha512-srbGurDtILpf9Ss3MNqBPUU7AtKvfMJz84FvifZchokOFXRG9Epgy3pwwgGXDjdEGs8F0tk9O/hSG/aQ5WrLAw==, tarball: https://registry.npmjs.org/@dynamic-labs/ethereum/-/@dynamic-labs/ethereum-5.15.1.tgz}
     peerDependencies:
       viem: ^2.45.3
 
   '@dynamic-labs/iconic@5.15.1':
-    resolution: {integrity: sha512-IJi1xQVU4lf0emhstHzj0oTvXWcVQjJPmGahC0NpzQPdgdU+NJfvvYGLVJAHw/ASi/6nR2GXJNSHeH8eaD83xw==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/iconic/-/@dynamic-labs/iconic-5.15.1.tgz}
+    resolution: {integrity: sha512-IJi1xQVU4lf0emhstHzj0oTvXWcVQjJPmGahC0NpzQPdgdU+NJfvvYGLVJAHw/ASi/6nR2GXJNSHeH8eaD83xw==, tarball: https://registry.npmjs.org/@dynamic-labs/iconic/-/@dynamic-labs/iconic-5.15.1.tgz}
     peerDependencies:
       react: '>=18.0.0 <20.0.0'
       react-dom: '>=18.0.0 <20.0.0'
 
   '@dynamic-labs/logger@5.15.1':
-    resolution: {integrity: sha512-sMuToLJekA1lsBawBe0Rm8+8HcRRJHTj+mWswxG7dBW5nZjAp9ZRKEExzH53lUir75RaV2euFmXrS8IAfXxECA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/logger/-/@dynamic-labs/logger-5.15.1.tgz}
+    resolution: {integrity: sha512-sMuToLJekA1lsBawBe0Rm8+8HcRRJHTj+mWswxG7dBW5nZjAp9ZRKEExzH53lUir75RaV2euFmXrS8IAfXxECA==, tarball: https://registry.npmjs.org/@dynamic-labs/logger/-/@dynamic-labs/logger-5.15.1.tgz}
 
   '@dynamic-labs/message-transport@5.15.1':
-    resolution: {integrity: sha512-824sso53Wokk13eCscIiwZ7vHajiRRfyoIj+ahfAL1MWtFOX+KHZ72O+Thv+QfWEWkkZEmsTP1FVMnObvcmL9A==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/message-transport/-/@dynamic-labs/message-transport-5.15.1.tgz}
+    resolution: {integrity: sha512-824sso53Wokk13eCscIiwZ7vHajiRRfyoIj+ahfAL1MWtFOX+KHZ72O+Thv+QfWEWkkZEmsTP1FVMnObvcmL9A==, tarball: https://registry.npmjs.org/@dynamic-labs/message-transport/-/@dynamic-labs/message-transport-5.15.1.tgz}
 
   '@dynamic-labs/redaction@1.1.0':
     resolution: {integrity: sha512-y3ixDtS4N+ZEgQC17k3d3oyxZ5BJ+sAGvQRklXCilwYkWOMwtMc6QEx/5uHz1PS/rxWYuZk+Egr1AC5NuzZLrg==}
 
   '@dynamic-labs/rpc-providers@5.15.1':
-    resolution: {integrity: sha512-N+1sPeAvsZt7ROtwAQz4pyOeUJrGJD/avTqQDuPgXmb6ilbLFd4YGcsoRIgYhUCV5h9HD+caPHtHMIobUNSMNQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/rpc-providers/-/@dynamic-labs/rpc-providers-5.15.1.tgz}
+    resolution: {integrity: sha512-N+1sPeAvsZt7ROtwAQz4pyOeUJrGJD/avTqQDuPgXmb6ilbLFd4YGcsoRIgYhUCV5h9HD+caPHtHMIobUNSMNQ==, tarball: https://registry.npmjs.org/@dynamic-labs/rpc-providers/-/@dynamic-labs/rpc-providers-5.15.1.tgz}
 
   '@dynamic-labs/sdk-api-core@0.134.0':
-    resolution: {integrity: sha512-YEM1wXRZ9k3A89jGbSfPYcR+Je4sMv7J94SLYX3ZFWIfTA10XYx8KNtA0WcLZU43QAg/gCbW1W7nA/tz5wwDUw==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/sdk-api-core/-/@dynamic-labs/sdk-api-core-0.134.0.tgz}
+    resolution: {integrity: sha512-YEM1wXRZ9k3A89jGbSfPYcR+Je4sMv7J94SLYX3ZFWIfTA10XYx8KNtA0WcLZU43QAg/gCbW1W7nA/tz5wwDUw==, tarball: https://registry.npmjs.org/@dynamic-labs/sdk-api-core/-/@dynamic-labs/sdk-api-core-0.134.0.tgz}
 
   '@dynamic-labs/sdk-api-core@0.142.0':
-    resolution: {integrity: sha512-4FJqUYgpB6xD29oue7BrWbBeedd4BExVEVQqFInCZ09+2IIekYqKTEOnc+09WkFguEwF3M6a4uif/5S5iviXxA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/sdk-api-core/-/@dynamic-labs/sdk-api-core-0.142.0.tgz}
+    resolution: {integrity: sha512-4FJqUYgpB6xD29oue7BrWbBeedd4BExVEVQqFInCZ09+2IIekYqKTEOnc+09WkFguEwF3M6a4uif/5S5iviXxA==, tarball: https://registry.npmjs.org/@dynamic-labs/sdk-api-core/-/@dynamic-labs/sdk-api-core-0.142.0.tgz}
 
   '@dynamic-labs/sdk-api-core@0.50.0':
-    resolution: {integrity: sha512-qdOdnBDB/q8zfe22jQr+4wBiKcawaLNxYJGNxMs5n+tF4jh2F98ZMv0JiJXPRc/W4jpnjgTNfEAfQErcpaxoOQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/sdk-api-core/-/@dynamic-labs/sdk-api-core-0.50.0.tgz}
+    resolution: {integrity: sha512-qdOdnBDB/q8zfe22jQr+4wBiKcawaLNxYJGNxMs5n+tF4jh2F98ZMv0JiJXPRc/W4jpnjgTNfEAfQErcpaxoOQ==, tarball: https://registry.npmjs.org/@dynamic-labs/sdk-api-core/-/@dynamic-labs/sdk-api-core-0.50.0.tgz}
 
   '@dynamic-labs/solana-core@5.15.1':
-    resolution: {integrity: sha512-z/J3IAUmq6ldGF61p94Y+c98NVusbJ4fjWxXugbUmVnOYxnTw9SzLGjq3IjQtuk8RhQSw5T44zZ35+XuNXxzVg==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/solana-core/-/@dynamic-labs/solana-core-5.15.1.tgz}
+    resolution: {integrity: sha512-z/J3IAUmq6ldGF61p94Y+c98NVusbJ4fjWxXugbUmVnOYxnTw9SzLGjq3IjQtuk8RhQSw5T44zZ35+XuNXxzVg==, tarball: https://registry.npmjs.org/@dynamic-labs/solana-core/-/@dynamic-labs/solana-core-5.15.1.tgz}
 
   '@dynamic-labs/starknet-core@5.15.1':
-    resolution: {integrity: sha512-y6VH2Vgi4u/waWegbVw0UjLUfI+Y6AxSlMTTIUeZwE9pB4YkKsqCcWswwEdYkz2yL2sXdJgyNzhf+EmNcsHIyw==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/starknet-core/-/@dynamic-labs/starknet-core-5.15.1.tgz}
+    resolution: {integrity: sha512-y6VH2Vgi4u/waWegbVw0UjLUfI+Y6AxSlMTTIUeZwE9pB4YkKsqCcWswwEdYkz2yL2sXdJgyNzhf+EmNcsHIyw==, tarball: https://registry.npmjs.org/@dynamic-labs/starknet-core/-/@dynamic-labs/starknet-core-5.15.1.tgz}
 
   '@dynamic-labs/starknet@5.15.1':
-    resolution: {integrity: sha512-S/44KI8GwoGmuFNEw8NzSI9bZl0u+B/cgyyyass2g85kY53p/evKil3GDbz/smXlEzuJLb5biBh7s3Um2p10BA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/starknet/-/@dynamic-labs/starknet-5.15.1.tgz}
+    resolution: {integrity: sha512-S/44KI8GwoGmuFNEw8NzSI9bZl0u+B/cgyyyass2g85kY53p/evKil3GDbz/smXlEzuJLb5biBh7s3Um2p10BA==, tarball: https://registry.npmjs.org/@dynamic-labs/starknet/-/@dynamic-labs/starknet-5.15.1.tgz}
 
   '@dynamic-labs/sui-core@5.15.1':
-    resolution: {integrity: sha512-SfB0WnKOLggH97ATfsVKLg8Jl0UdxhILtzx/zCATKWq/ZKGTqBj7iq0IateFSaZW1ka0QEqo3t0qmmVKp+cDlw==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/sui-core/-/@dynamic-labs/sui-core-5.15.1.tgz}
+    resolution: {integrity: sha512-SfB0WnKOLggH97ATfsVKLg8Jl0UdxhILtzx/zCATKWq/ZKGTqBj7iq0IateFSaZW1ka0QEqo3t0qmmVKp+cDlw==, tarball: https://registry.npmjs.org/@dynamic-labs/sui-core/-/@dynamic-labs/sui-core-5.15.1.tgz}
 
   '@dynamic-labs/types@5.15.1':
-    resolution: {integrity: sha512-GA3v6uZFvR7yCmcKRoSYn5EZM6FNgeGul+J3oMP5Hi4i2oeUMCSyYdLh4VEehEQCDTis0v9iz6/S8ckD1LWPUg==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/types/-/@dynamic-labs/types-5.15.1.tgz}
+    resolution: {integrity: sha512-GA3v6uZFvR7yCmcKRoSYn5EZM6FNgeGul+J3oMP5Hi4i2oeUMCSyYdLh4VEehEQCDTis0v9iz6/S8ckD1LWPUg==, tarball: https://registry.npmjs.org/@dynamic-labs/types/-/@dynamic-labs/types-5.15.1.tgz}
 
   '@dynamic-labs/utils@5.15.1':
-    resolution: {integrity: sha512-xVcONmsKK2lMMpr6Bckam/8Mq3Bn9NXvZCsc3IjRk6eSTUpCF/zMYm4JNNSIUamc/WvGlPfR6gxhdMYJSGEfcg==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/utils/-/@dynamic-labs/utils-5.15.1.tgz}
+    resolution: {integrity: sha512-xVcONmsKK2lMMpr6Bckam/8Mq3Bn9NXvZCsc3IjRk6eSTUpCF/zMYm4JNNSIUamc/WvGlPfR6gxhdMYJSGEfcg==, tarball: https://registry.npmjs.org/@dynamic-labs/utils/-/@dynamic-labs/utils-5.15.1.tgz}
 
   '@dynamic-labs/waas-evm@5.15.1':
-    resolution: {integrity: sha512-74Q40oOtYdAHP72IDAqFJFxMqECg/en4S6qkuUeC1kPWTz7jA72G0mcp6hh58ve8GvbPvy3NVlTWRj2o8gcuRA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/waas-evm/-/@dynamic-labs/waas-evm-5.15.1.tgz}
+    resolution: {integrity: sha512-74Q40oOtYdAHP72IDAqFJFxMqECg/en4S6qkuUeC1kPWTz7jA72G0mcp6hh58ve8GvbPvy3NVlTWRj2o8gcuRA==, tarball: https://registry.npmjs.org/@dynamic-labs/waas-evm/-/@dynamic-labs/waas-evm-5.15.1.tgz}
 
   '@dynamic-labs/waas@5.15.1':
-    resolution: {integrity: sha512-2R2LSwIIRySpURnswDBHDKDckoVwNzS0H2pJxsTkZm+2EXtxMNJ/EG+fUze6Wa9GZQ1cIz7+Rw6oOowhRSKlfQ==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/waas/-/@dynamic-labs/waas-5.15.1.tgz}
+    resolution: {integrity: sha512-2R2LSwIIRySpURnswDBHDKDckoVwNzS0H2pJxsTkZm+2EXtxMNJ/EG+fUze6Wa9GZQ1cIz7+Rw6oOowhRSKlfQ==, tarball: https://registry.npmjs.org/@dynamic-labs/waas/-/@dynamic-labs/waas-5.15.1.tgz}
 
   '@dynamic-labs/wallet-book@5.15.1':
-    resolution: {integrity: sha512-6uWE5PGkbWq24c8F/2sak3je068DJVqMyeogdPU/o6gbD/7tpgIPqduUvOP6subsRpRTipOSSbytKlPkBr2weg==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/wallet-book/-/@dynamic-labs/wallet-book-5.15.1.tgz}
+    resolution: {integrity: sha512-6uWE5PGkbWq24c8F/2sak3je068DJVqMyeogdPU/o6gbD/7tpgIPqduUvOP6subsRpRTipOSSbytKlPkBr2weg==, tarball: https://registry.npmjs.org/@dynamic-labs/wallet-book/-/@dynamic-labs/wallet-book-5.15.1.tgz}
     peerDependencies:
       react: '>=18.0.0 <20.0.0'
       react-dom: '>=18.0.0 <20.0.0'
 
   '@dynamic-labs/wallet-connect@5.15.1':
-    resolution: {integrity: sha512-QRg9SlbYsRYW7VvYRJ4T6sdAKXVdUgTJgzd+C+mIcaIvk4dXfqyF6m/qrX2dLTVaN+SRTmBu/4h392zamm6fUA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/wallet-connect/-/@dynamic-labs/wallet-connect-5.15.1.tgz}
+    resolution: {integrity: sha512-QRg9SlbYsRYW7VvYRJ4T6sdAKXVdUgTJgzd+C+mIcaIvk4dXfqyF6m/qrX2dLTVaN+SRTmBu/4h392zamm6fUA==, tarball: https://registry.npmjs.org/@dynamic-labs/wallet-connect/-/@dynamic-labs/wallet-connect-5.15.1.tgz}
 
   '@dynamic-labs/wallet-connector-core@5.15.1':
-    resolution: {integrity: sha512-gfTHij6+RSCJfZkJ3+baAWL+LoTbND73TZoosNirhYED5uk4K+dDDZjuQ+VL6saQt5eIWXYlinsca0U/tkLYKA==, tarball: https://fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/@dynamic-labs/wallet-connector-core/-/@dynamic-labs/wallet-connector-core-5.15.1.tgz}
+    resolution: {integrity: sha512-gfTHij6+RSCJfZkJ3+baAWL+LoTbND73TZoosNirhYED5uk4K+dDDZjuQ+VL6saQt5eIWXYlinsca0U/tkLYKA==, tarball: https://registry.npmjs.org/@dynamic-labs/wallet-connector-core/-/@dynamic-labs/wallet-connector-core-5.15.1.tgz}
 
   '@ecies/ciphers@0.2.5':
     resolution: {integrity: sha512-GalEZH4JgOMHYYcYmVqnFirFsjZHeoGMDt9IxEnM9F7GRUUyUksJ7Ou53L83WHJq3RWKD3AcBpo0iQh0oMpf8A==}
