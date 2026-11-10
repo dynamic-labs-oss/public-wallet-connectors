@@ -24,6 +24,7 @@ export default {
   coverageDirectory:
     '../../../coverage/packages/@dynamic-labs-connectors/metamask-evm',
   moduleNameMapper: {
-    '^@dynamic-labs-connectors/base-account-evm$': '<rootDir>/../../../jest-config/mocks/base-account-evm.js'
+    '^@dynamic-labs-connectors/base-account-evm$': '<rootDir>/../../../jest-config/mocks/base-account-evm.js',
+    '^@dynamic-labs/waas-evm$': '<rootDir>/../../../jest-config/mocks/waas-evm.js'
   },
 };

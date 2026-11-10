@@ -58,7 +58,7 @@ export class SequenceCrossAppConnector extends EthereumInjectedConnector {
   override async signMessage(message: string): Promise<string> {
     const provider = this.findProvider();
     if (!provider) {
-      throw new DynamicError('No provider found');
+      throw new DynamicError('No provider found', 'no_provider_found');
     }
     const address = await this.getAddress();
     return (await provider.request({

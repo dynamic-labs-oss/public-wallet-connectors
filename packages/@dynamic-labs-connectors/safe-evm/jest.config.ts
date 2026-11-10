@@ -30,6 +30,8 @@ export default {
     '../../../coverage/packages/@dynamic-labs-connectors/safe-evm',
   // Add moduleNameMapper for ES modules
   moduleNameMapper: {
-    '^@dynamic-labs-connectors/base-account-evm$': '<rootDir>/../../../jest-config/mocks/base-account-evm.js'
+    '^@dynamic-labs-connectors/base-account-evm$': '<rootDir>/../../../jest-config/mocks/base-account-evm.js',
+    '^@dynamic-labs/waas-evm$': '<rootDir>/../../../jest-config/mocks/waas-evm.js',
+    '^@dynamic-labs-connectors/metamask-evm$': '<rootDir>/../../../jest-config/mocks/metamask-evm.js'
   },
 };

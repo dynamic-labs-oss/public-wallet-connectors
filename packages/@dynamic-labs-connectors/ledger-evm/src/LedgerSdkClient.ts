@@ -15,7 +15,7 @@ export class LedgerSdkClient {
     LedgerSdkClient.isInitialized = true;
     logger.debug('[LedgerSdkClient] Initializing Ledger provider');
 
-    LedgerSdkClient.provider = window.ethereum;
+    LedgerSdkClient.provider = window.ethereum as unknown as IEthereum;
     logger.debug('[LedgerSdkClient] Ledger provider initialized');
   };
 
