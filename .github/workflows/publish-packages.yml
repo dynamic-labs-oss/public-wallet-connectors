@@ -26,3 +26,5 @@ jobs:
         with:
           type: publish
           ref: ${{ github.event.inputs.ref }}
+        env:
+          JFROG_TOKEN: ${{ secrets.JFROG_PUBLISHING_TOKEN }}
