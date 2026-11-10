@@ -1,6 +1,6 @@
 {
   "name": "@dynamic-labs-connectors/tap-bitcoin",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dynamic-labs-oss/public-wallet-connectors.git",
