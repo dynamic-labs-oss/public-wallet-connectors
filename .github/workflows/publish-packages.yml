@@ -18,6 +18,18 @@ jobs:
       deployments: write
       packages: write
     steps:
+      - name: Authenticate with the JFrog registry
+        shell: bash
+        env:
+          JFROG_TOKEN: ${{ secrets.JFROG_PUBLISHING_TOKEN }}
+        run: |-
+          set -eo pipefail
+          if [ -z "$JFROG_TOKEN" ]; then
+            echo "::warning::No JFrog token provided, packages will only be published to npmjs"
+            exit 0
+          fi
+          npm config set "//fbinfra555artifactory.jfrog.io/artifactory/api/npm/dynamic-npm/:_authToken=${JFROG_TOKEN}"
+          echo "JFROG_ENABLED=true" >> "$GITHUB_ENV"
       - name: Publish
         env:
           ACTIONS_RUNNER_DEBUG: true
