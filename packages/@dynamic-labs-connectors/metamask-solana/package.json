@@ -1,6 +1,6 @@
 {
   "name": "@dynamic-labs-connectors/metamask-solana",
-  "version": "4.7.0",
+  "version": "5.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dynamic-labs-oss/public-wallet-connectors.git",
@@ -21,13 +21,13 @@
     }
   },
   "dependencies": {
-    "@dynamic-labs/utils": "^4.88.7",
+    "@dynamic-labs/utils": "^5.0.0",
     "@metamask/connect-solana": "2.1.0",
     "bs58": "^6.0.0"
   },
   "peerDependencies": {
-    "@dynamic-labs/solana-core": "^4.88.7",
-    "@dynamic-labs/wallet-connector-core": "^4.88.7",
+    "@dynamic-labs/solana-core": "^5.0.0",
+    "@dynamic-labs/wallet-connector-core": "^5.0.0",
     "@solana/web3.js": ">=1.0.0"
   }
 }

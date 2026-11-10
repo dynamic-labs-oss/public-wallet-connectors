@@ -1,6 +1,6 @@
 {
   "name": "@dynamic-labs-connectors/base-account-evm",
-  "version": "4.7.0",
+  "version": "5.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dynamic-labs-oss/public-wallet-connectors.git",
@@ -24,13 +24,13 @@
     "@base-org/account": "^1.1.1"
   },
   "peerDependencies": {
-    "@dynamic-labs/ethereum-core": "^4.88.7",
-    "@dynamic-labs/wallet-connector-core": "^4.88.7",
-    "viem": "^2.21.55"
+    "@dynamic-labs/ethereum-core": "^5.0.0",
+    "@dynamic-labs/wallet-connector-core": "^5.0.0",
+    "viem": "^2.45.3"
   },
   "devDependencies": {
-    "@dynamic-labs/ethereum-core": "^4.88.7",
-    "@dynamic-labs/wallet-connector-core": "^4.88.7",
-    "@dynamic-labs/utils": "^4.88.7"
+    "@dynamic-labs/ethereum-core": "^5.0.0",
+    "@dynamic-labs/wallet-connector-core": "^5.0.0",
+    "@dynamic-labs/utils": "^5.0.0"
   }
 }

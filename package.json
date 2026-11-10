@@ -1,7 +1,7 @@
 {
   "name": "root",
   "private": true,
-  "version": "4.7.0",
+  "version": "5.0.1",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "postinstall": "lefthook install",
@@ -63,6 +63,7 @@
       "axios": "^1.18.0",
       "image-size": "^1.2.1",
       "base-x": ">=4.0.1",
+      "browserslist": "^4.28.7",
       "form-data": ">=4.0.6",
       "@hpke/core": "^1.7.5",
       "protobufjs@7": "^7.6.1",
@@ -106,7 +107,9 @@
       "yaml@2": "^2.8.3",
       "@tootallnate/once": "^3.0.1",
       "diff@4": "^4.0.4",
-      "bigint-buffer": "npm:@vekexasia/bigint-buffer2@^1.1.0"
+      "bigint-buffer": "npm:@vekexasia/bigint-buffer2@^1.1.0",
+      "@dynamic-labs-connectors/base-account-evm": "workspace:*",
+      "@dynamic-labs-connectors/metamask-evm": "workspace:*"
     },
     "onlyBuiltDependencies": [
       "@swc/core",

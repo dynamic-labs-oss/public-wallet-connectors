@@ -1,6 +1,6 @@
 {
   "name": "@dynamic-labs-connectors/tap-bitcoin",
-  "version": "4.7.0",
+  "version": "5.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dynamic-labs-oss/public-wallet-connectors.git",
@@ -21,8 +21,8 @@
     }
   },
   "dependencies": {
-    "@dynamic-labs/bitcoin": "^4.20.1",
-    "@dynamic-labs/utils": "^4.20.1",
-    "@dynamic-labs/wallet-connector-core": "^4.20.1"
+    "@dynamic-labs/bitcoin": "^5.0.0",
+    "@dynamic-labs/utils": "^5.0.0",
+    "@dynamic-labs/wallet-connector-core": "^5.0.0"
   }
 }

@@ -10,12 +10,12 @@
     "sync": "cd ../tmp/sdk-tools && ./sync-all.sh"
   },
   "dependencies": {
-    "@dynamic-labs/ethereum": "^4.77.1",
-    "@dynamic-labs/ethereum-core": "^4.77.1",
-    "@dynamic-labs/sdk-react-core": "^4.77.1",
-    "@dynamic-labs/solana": "^4.77.1",
-    "@dynamic-labs/solana-core": "^4.77.1",
-    "@dynamic-labs/wallet-connector-core": "^4.77.1",
+    "@dynamic-labs/ethereum": "^5.0.0",
+    "@dynamic-labs/ethereum-core": "^5.0.0",
+    "@dynamic-labs/sdk-react-core": "^5.0.0",
+    "@dynamic-labs/solana": "^5.0.0",
+    "@dynamic-labs/solana-core": "^5.0.0",
+    "@dynamic-labs/wallet-connector-core": "^5.0.0",
     "@metamask/connect-evm": "^1.0.0",
     "@metamask/connect-solana": "^1.0.0",
     "@metamask/rpc-errors": "^7.0.3",
@@ -24,7 +24,7 @@
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "viem": "^2.21.55"
+    "viem": "^2.45.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
