@@ -108,8 +108,7 @@
       "@tootallnate/once": "^3.0.1",
       "diff@4": "^4.0.4",
       "bigint-buffer": "npm:@vekexasia/bigint-buffer2@^1.1.0",
-      "@dynamic-labs-connectors/base-account-evm": "workspace:*",
-      "@dynamic-labs-connectors/metamask-evm": "workspace:*"
+      "@dynamic-labs-connectors/base-account-evm": "workspace:*"
     },
     "onlyBuiltDependencies": [
       "@swc/core",
