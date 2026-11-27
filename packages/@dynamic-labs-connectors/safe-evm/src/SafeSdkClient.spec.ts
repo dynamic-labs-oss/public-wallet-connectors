@@ -21,6 +21,67 @@ describe('SafeSdkClient', () => {
   });
 
   describe('init', () => {
+    it('should retry initialization after safe info times out', async () => {
+      jest.useFakeTimers();
+      try {
+        const safeInfo: SafeInfo = {
+          chainId: 1,
+          isReadOnly: false,
+          owners: [],
+          safeAddress: '0x123',
+          threshold: 1,
+        };
+        const getInfo = jest
+          .fn()
+          .mockImplementationOnce(() => new Promise(() => undefined))
+          .mockResolvedValueOnce(safeInfo);
+        (SafeAppsSDK as jest.Mock).mockImplementation(() => ({
+          safe: { getInfo },
+        }));
+
+        const firstAttempt = SafeSdkClient.init();
+        await jest.advanceTimersByTimeAsync(1000);
+        await firstAttempt;
+
+        await SafeSdkClient.init();
+
+        expect(getInfo).toHaveBeenCalledTimes(2);
+        expect(SafeSdkClient.isInitialized).toBe(true);
+        expect(SafeAppProvider).toHaveBeenCalledWith(
+          safeInfo,
+          SafeSdkClient.safeSdk,
+        );
+      } finally {
+        jest.clearAllTimers();
+        jest.useRealTimers();
+      }
+    });
+
+    it('should retry initialization after safe info fails to load', async () => {
+      const error = new Error('Safe app is not ready');
+      const safeInfo: SafeInfo = {
+        chainId: 1,
+        isReadOnly: false,
+        owners: [],
+        safeAddress: '0x123',
+        threshold: 1,
+      };
+      const getInfo = jest
+        .fn()
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce(safeInfo);
+      (SafeAppsSDK as jest.Mock).mockImplementation(() => ({
+        safe: { getInfo },
+      }));
+
+      await expect(SafeSdkClient.init()).rejects.toBe(error);
+      await SafeSdkClient.init();
+
+      expect(getInfo).toHaveBeenCalledTimes(2);
+      expect(SafeSdkClient.isInitialized).toBe(true);
+      expect(SafeSdkClient.getAddress()).toBe(safeInfo.safeAddress);
+    });
+
     it('should only initialize once', async () => {
       const mockGetInfo = jest.fn().mockResolvedValue({
         chainId: 1,
@@ -43,6 +104,37 @@ describe('SafeSdkClient', () => {
       await SafeSdkClient.init();
       expect(SafeSdkClient.safeSdk).toBe(firstSdk);
       expect(mockGetInfo).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not initialize another provider while safe info is loading', async () => {
+      let resolveInfo!: (info: SafeInfo) => void;
+      const getInfo = jest.fn().mockReturnValue(
+        new Promise<SafeInfo>((resolve) => {
+          resolveInfo = resolve;
+        }),
+      );
+      (SafeAppsSDK as jest.Mock).mockImplementation(() => ({
+        safe: { getInfo },
+      }));
+
+      const firstAttempt = SafeSdkClient.init();
+      await SafeSdkClient.init();
+
+      expect(SafeAppsSDK).toHaveBeenCalledTimes(1);
+      expect(SafeAppProvider).not.toHaveBeenCalled();
+
+      resolveInfo({
+        chainId: 1,
+        isReadOnly: false,
+        owners: [],
+        safeAddress: '0x123',
+        threshold: 1,
+      });
+      await firstAttempt;
+      await SafeSdkClient.init();
+
+      expect(getInfo).toHaveBeenCalledTimes(1);
+      expect(SafeAppProvider).toHaveBeenCalledTimes(1);
     });
 
     it('should initialize provider when safe info is available', async () => {

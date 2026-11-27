@@ -27,6 +27,15 @@ export class SafeSdkClient {
 
     SafeSdkClient.isInitialized = true;
 
+    try {
+      await SafeSdkClient.initializeProvider();
+    } finally {
+      // Keep concurrent calls guarded, but allow retries if no provider was created.
+      SafeSdkClient.isInitialized = Boolean(SafeSdkClient.provider);
+    }
+  };
+
+  private static initializeProvider = async () => {
     logger.debug('[SafeSdkClient] initializing sdk');
 
     SafeSdkClient.safeSdk = new SafeAppsSDK();
